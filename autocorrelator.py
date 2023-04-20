@@ -86,7 +86,7 @@ I1+=2*np.trapz(E**4,t) # Offset
 ax4.plot(t,I1,lw=2)
 
 ax4.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
-ax4.set_ylabel('$S_{cuadratic}\ J/m^2$', fontsize=16)
-ax4.set_title(r'Cuadratic autocorrelator', fontsize=16, color='r')
+ax4.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
+ax4.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
 
 plt.show()
