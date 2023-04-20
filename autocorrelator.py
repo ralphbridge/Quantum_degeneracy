@@ -2,17 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 
+plt.rcParams['text.usetex'] = True
+
 global lam,E0,sigma
 
-lam=532e-9
 eps0=8.85e-12
 c=3e8
-I0=1e14
+lam=532e-9 # laser frequency
+I0=1e14 # laser intensity
+sigma=5*lam # laser variance
 E0=np.sqrt(2*I0/(c*eps0))
-sigma=5*lam
 
-
-# The parametrized function to be plotted
+# Definitions for Electric fields and Intensity as functions of z and t
 def f(z,t):
     return E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(2*np.pi*(z)/lam)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(2*np.pi*(-z-2*c*t)/lam)
     
@@ -24,13 +25,13 @@ z=np.linspace(-30e-6,30e-6,100000)
 # Define initial parameters
 init_t=-150e-15
 
-# Create the figure and the line that we will manipulate
+# Figure properties for the slider
 fig,(ax1,ax2)=plt.subplots(2)
 line1,=ax1.plot(z,f(z,init_t),lw=2)
-ax1.set_xlabel('Position [micro m]')
+ax1.set_xlabel(r'$Position\ \mu m$')
 ax1.set(xlim=(min(z),max(z)),ylim=(-2*E0,2*E0))
 line2,=ax2.plot(z,I(z,init_t),lw=2)
-ax2.set_xlabel('Position [micro m]')
+ax2.set_xlabel(r'$Position\ \mu m$')
 ax2.set(xlim=(min(z),max(z)),ylim=(-E0**2,E0**2))
 
 # adjust the main plot to make room for the sliders
@@ -67,19 +68,25 @@ plt.show()
 
 t=np.linspace(-0.6e-13,0.6e-13,10000)
 
-E=E0*np.exp(-0.5*((c*t)/sigma)**2)*np.cos(2*np.pi*(2*c*t)/lam)
+E=E0*np.exp(-0.5*((c*t)/sigma)**2)*np.cos(2*np.pi*(2*c*t)/lam) # Pulse electric field
 
-I0=0*t+2*np.trapz(E**2,t)
-I0+=0*t+2*np.convolve(E,E,mode='same')
-fig,ax3=plt.subplots()
-line3,=ax3.plot(t,I0,lw=2)
+I0=2*np.convolve(E,E,mode='same') # Interference term (documentation, eq. (4.7) page 54)
+I0+=2*np.trapz(E**2,t) # Offset 
 
-plt.show()
+fig,(ax3,ax4)=plt.subplots(2,tight_layout=True)
+ax3.plot(t,I0,lw=2)
 
-I1=0*t+2*np.trapz(E**4,t)
-I1+=0*t+8*np.convolve(E**3,E,mode='same')
-I1+=0*t+6*np.convolve(E**2,E**2,mode='same')
-fig,ax3=plt.subplots()
-line3,=ax3.plot(t,I1,lw=2)
+ax3.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
+ax3.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
+ax3.set_title(r'Linear autocorrelator', fontsize=16, color='r')
+
+I1=8*np.convolve(E**3,E,mode='same') # Interference terms (documentation, eq. (4.8) page 54)
+I1+=6*np.convolve(E**2,E**2,mode='same')
+I1+=2*np.trapz(E**4,t) # Offset
+ax4.plot(t,I1,lw=2)
+
+ax4.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
+ax4.set_ylabel('$S_{cuadratic}\ J/m^2$', fontsize=16)
+ax4.set_title(r'Cuadratic autocorrelator', fontsize=16, color='r')
 
 plt.show()
