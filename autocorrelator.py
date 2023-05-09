@@ -8,22 +8,23 @@ global lam,E0,sigma
 
 eps0=8.85e-12
 c=3e8 # group velocity
-vp=1.2*c # phase velocity
+vp=0.6*c # phase velocity
 lam=532e-9 # laser frequency
 k=2*np.pi/lam
 w=k*vp
+alpha=1e3 # Chirp correction
 I0=1e14 # laser intensity
 sigma=5*lam # laser variance
 E0=np.sqrt(2*I0/(c*eps0))
 
 # Definitions for Electric fields and Intensity as functions of z and t
 def f(z,t):
-    return E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(2*np.pi*(z)/lam)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(2*np.pi*(-z-2*c*t)/lam)
+    return E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(k*z)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(-k*z-(w+alpha*t)*t)
     
 #def I(z,t):
 #    return (E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(2*np.pi*(z)/lam)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(2*np.pi*(-z-2*c*t)/lam))**2
 def I(z,t):
-    return (E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(k*z)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(-k*z-w*t))**2
+    return (E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(k*z)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(-k*z-(w+alpha*t)*t))**2
 
 z=np.linspace(-30e-6,30e-6,100000)
 
