@@ -7,8 +7,11 @@ plt.rcParams['text.usetex'] = True
 global lam,E0,sigma
 
 eps0=8.85e-12
-c=3e8
+c=3e8 # group velocity
+vp=1.2*c # phase velocity
 lam=532e-9 # laser frequency
+k=2*np.pi/lam
+w=k*vp
 I0=1e14 # laser intensity
 sigma=5*lam # laser variance
 E0=np.sqrt(2*I0/(c*eps0))
@@ -17,8 +20,10 @@ E0=np.sqrt(2*I0/(c*eps0))
 def f(z,t):
     return E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(2*np.pi*(z)/lam)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(2*np.pi*(-z-2*c*t)/lam)
     
+#def I(z,t):
+#    return (E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(2*np.pi*(z)/lam)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(2*np.pi*(-z-2*c*t)/lam))**2
 def I(z,t):
-    return (E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(2*np.pi*(z)/lam)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(2*np.pi*(-z-2*c*t)/lam))**2
+    return (E0*np.exp(-0.5*((z)/sigma)**2)*np.cos(k*z)+E0*np.exp(-0.5*((-z-c*t)/sigma)**2)*np.cos(-k*z-w*t))**2
 
 z=np.linspace(-30e-6,30e-6,100000)
 
@@ -67,8 +72,8 @@ button.on_clicked(reset)
 
 plt.show()
 
-t=np.linspace(-0.6e-13,0.6e-13,10000)
-I_pulses=np.linspace(-0.6e-13,0.6e-13,10000)
+t=np.linspace(-0.6e-13,0.6e-13,5000)
+I_pulses=np.linspace(-0.6e-13,0.6e-13,5000)
 S_l=np.zeros(len(t))
 S_q=np.zeros(len(t))
 j=0
