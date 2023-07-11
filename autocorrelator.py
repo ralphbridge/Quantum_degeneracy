@@ -57,3 +57,7 @@ ax4.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
 ax4.set_xlim([-0.5*tmax,0.5*tmax])
 
 plt.show()
+
+# Estimate dispersion for our laser: a) due to air, b) due to optics elements
+# Start at a transform limit pulse (assume the pulse is good from the laser)
+# Ask for the FROG at Kees' lab
