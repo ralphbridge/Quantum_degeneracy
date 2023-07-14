@@ -10,7 +10,7 @@ vp=0.6*c # phase velocity
 lam=800e-9 # laser frequency
 k=2*np.pi/lam
 w=3*k*vp
-alpha=1e29 # Chirp correction
+#alpha=1e29 # Chirp correction
 I0=1e14 # laser intensity
 #sigma=5*lam # laser variance
 FWHM=8e-15
@@ -19,46 +19,91 @@ E0=np.sqrt(2*I0/(c*eps0))
 tmax=1e-13
 
 # Definitions for Electric fields and Intensity as functions of z and t
-def E(t):
+def E(t,alpha):
+    Ef=np.zeros(len(t))
     z=0
-    return E0*np.exp(-((-z-c*t)/sigma)**2)*np.cos(-k*z-(w+alpha*t)*t)
+    Ef=E0*np.exp(-((-z-c*t)/sigma)**2)*np.cos(-k*z-(w+alpha*t)*t)
+    return Ef
 
-z=np.linspace(-30e-6,30e-6,100000)
+def S_l(t,alpha):
+    S=np.zeros(len(t))
+    j=0
+    for tau in t:
+	    S[j]=np.trapz((E(t,alpha)+E(t+tau,alpha))**2,t)
+	    j+=1
+    return S
+
+def S_q(t,alpha):
+    S=np.zeros(len(t))
+    j=0
+    for tau in t:
+	    S[j]=np.trapz(((E(t,alpha)+E(t+tau,alpha))**2)**2,t)
+	    j+=1
+    return S
 
 t=np.linspace(-tmax,tmax,5000)
 
-Ef=np.zeros(len(t))
-S_l=np.zeros(len(t))
-S_q=np.zeros(len(t))
-j=0
+##################################################################################################################
+############################################################################################### Slider
 
-for tau in t:
-	Ef[j]=E(tau)
-	S_l[j]=np.trapz((E(t)+E(t+tau))**2,t)
-	S_q[j]=np.trapz(((E(t)+E(t+tau))**2)**2,t)
-	j+=1
-	
-fig,(ax2,ax3,ax4)=plt.subplots(3,1,tight_layout=True)
+init_alpha=0.5e28
 
-ax2.plot(t,Ef,lw=2)
-ax2.set_xlabel(r'Time $t\ s$', fontsize=16)
-ax2.set_ylabel('$E\ V/m$', fontsize=16)
-ax2.set_title(r'Electric field', fontsize=16, color='r')
+# Create the figure and the line that we will manipulate
+fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
+
+line1,=ax1.plot(t,E(t,init_alpha),lw=2)
+ax1.set_xlabel(r'Time $t\ s$', fontsize=16)
+ax1.set_ylabel('$E\ V/m$', fontsize=16)
+ax1.set_title(r'Electric field', fontsize=16, color='r')
+ax1.set_xlim([-0.5*tmax,0.5*tmax])
+
+line2,=ax2.plot(t,S_l(t,init_alpha),lw=2)
+ax2.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
+ax2.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
+ax2.set_title(r'Linear autocorrelator', fontsize=16, color='r')
 ax2.set_xlim([-0.5*tmax,0.5*tmax])
 
-ax3.plot(t,S_l,lw=2)
+line3,=ax3.plot(t,S_q(t,init_alpha),lw=2)
 ax3.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
-ax3.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
-ax3.set_title(r'Linear autocorrelator', fontsize=16, color='r')
+ax3.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
+ax3.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
 ax3.set_xlim([-0.5*tmax,0.5*tmax])
 
-ax4.plot(t,S_q,lw=2)
-ax4.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
-ax4.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
-ax4.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
-ax4.set_xlim([-0.5*tmax,0.5*tmax])
+# adjust the main plot to make room for the sliders
+fig.subplots_adjust(left=0.25, bottom=0.25)
+
+# Make a horizontal slider to control the frequency.
+axt=fig.add_axes([0.25, 0.1, 0.65, 0.03])
+alpha_slider=Slider(
+    ax=axt,
+    label='Chirp',
+    valmin=init_alpha,
+    valmax=1e30,
+    valinit=init_alpha,
+)
+
+# The function to be called anytime a slider's value changes
+def update(val):
+    line1.set_ydata(E(t,alpha_slider.val))
+    line2.set_ydata(S_l(t,alpha_slider.val))
+    line3.set_ydata(S_q(t,alpha_slider.val))
+    fig.canvas.draw_idle()
+
+# register the update function with each slider
+alpha_slider.on_changed(update)
+
+# Create a `matplotlib.widgets.Button` to reset the sliders to initial values
+resetax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
+button = Button(resetax, 'Reset', hovercolor='0.975')
+
+def reset(event):
+    time_slider.reset()
+button.on_clicked(reset)
 
 plt.show()
+
+############################################################################################### End of slider
+##################################################################################################################
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
 # Start at a transform limit pulse (assume the pulse is good from the laser)
