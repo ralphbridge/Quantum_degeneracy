@@ -14,9 +14,9 @@ w=3*k*vp
 I0=1e14 # laser intensity
 #sigma=5*lam # laser variance
 FWHM=8e-15
-sigma=0.5*c*np.sqrt(2*np.log(2))*FWHM
+sigma=c*np.sqrt(2*np.log(2))*FWHM
 E0=np.sqrt(2*I0/(c*eps0))
-tmax=1e-13
+tmax=0.5e-13
 
 # Definitions for Electric fields and Intensity as functions of z and t
 def E(t,alpha):
@@ -41,7 +41,7 @@ def S_q(t,alpha):
 	    j+=1
     return S
 
-t=np.linspace(-tmax,tmax,5000)
+t=np.linspace(-tmax,tmax,2000)
 
 ##################################################################################################################
 ############################################################################################### Slider
@@ -55,25 +55,25 @@ line1,=ax1.plot(t,E(t,init_alpha),lw=2)
 ax1.set_xlabel(r'Time $t\ s$', fontsize=16)
 ax1.set_ylabel('$E\ V/m$', fontsize=16)
 ax1.set_title(r'Electric field', fontsize=16, color='r')
-ax1.set_xlim([-0.5*tmax,0.5*tmax])
+ax1.set_xlim([-tmax,tmax])
 
 line2,=ax2.plot(t,S_l(t,init_alpha),lw=2)
 ax2.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
 ax2.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
 ax2.set_title(r'Linear autocorrelator', fontsize=16, color='r')
-ax2.set_xlim([-0.5*tmax,0.5*tmax])
+ax2.set_xlim([-tmax,tmax])
 
 line3,=ax3.plot(t,S_q(t,init_alpha),lw=2)
 ax3.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
 ax3.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
 ax3.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
-ax3.set_xlim([-0.5*tmax,0.5*tmax])
+ax3.set_xlim([-tmax,tmax])
 
 # adjust the main plot to make room for the sliders
-fig.subplots_adjust(left=0.25, bottom=0.25)
+fig.subplots_adjust(left=0.4, bottom=0.4)
 
 # Make a horizontal slider to control the frequency.
-axt=fig.add_axes([0.25, 0.1, 0.65, 0.03])
+axt=fig.add_axes([0.25, 0, 0.65, 0.03])
 alpha_slider=Slider(
     ax=axt,
     label='Chirp',
@@ -108,3 +108,5 @@ plt.show()
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
 # Start at a transform limit pulse (assume the pulse is good from the laser)
 # Ask for the FROG at Kees' lab
+# July 18
+# Read Keese's DAMOP2005 tutorial to understand their parametrization, and look for the real parameters to give physical meaning to the chirp code I have implemented
