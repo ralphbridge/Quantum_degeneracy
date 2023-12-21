@@ -6,7 +6,7 @@ global lam,E0,sigma
 
 eps0=8.85e-12
 c=3e8 # group velocity
-vp=0.6*c # phase velocity
+vp=c # phase velocity
 lam=800e-9 # laser frequency
 k=2*np.pi/lam
 w=3*k*vp
@@ -14,7 +14,7 @@ w=3*k*vp
 I0=1e14 # laser intensity
 #sigma=5*lam # laser variance
 FWHM=8e-15
-sigma=c*np.sqrt(2*np.log(2))*FWHM
+sigma=c*FWHM/(2*np.sqrt(2*np.log(2)))
 E0=np.sqrt(2*I0/(c*eps0))
 tmax=0.5e-13
 
@@ -22,7 +22,7 @@ tmax=0.5e-13
 def E(t,alpha):
     Ef=np.zeros(len(t))
     z=0
-    Ef=E0*np.exp(-((-z-c*t)/sigma)**2)*np.cos(-k*z-(w+alpha*t)*t)
+    Ef=E0*np.exp(-((-z-c*t)/(2*sigma))**2)*np.cos(-k*z-(w+alpha*t)*t)
     return Ef
 
 def S_l(t,alpha):
@@ -107,6 +107,3 @@ plt.show()
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
 # Start at a transform limit pulse (assume the pulse is good from the laser)
-# Ask for the FROG at Kees' lab
-# July 18
-# Read Keese's DAMOP2005 tutorial to understand their parametrization, and look for the real parameters to give physical meaning to the chirp code I have implemented
