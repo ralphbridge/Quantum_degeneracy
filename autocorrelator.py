@@ -107,10 +107,7 @@ plt.show()
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
 # Start at a transform limit pulse (assume the pulse is good from the laser)
-<<<<<<< HEAD
 # Ask for the FROG at Kees' lab
 # July 18
 # Read Keese's DAMOP2005 tutorial to understand their parametrization, and look for the real parameters to give physical meaning to the chirp code I have implemented
 # Added ssh key
-=======
->>>>>>> a70fedb69abd6ccc0177781b361504d3a3370847
