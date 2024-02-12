@@ -21,133 +21,31 @@ for i=1:length(lambda)
     I_f100fs_ir(length(lambda)-i+1)=lambda(i)^2*I_lambda100fs_ir(i)/c;
 end
 
-% subplot(2,1,1)
-% plot(lambda,I_lambda10fs)
-% grid on
-% 
-% subplot(2,1,2)
-% plot(f,I_f10fs)
-% grid on
-% 
-% figure
-% subplot(2,1,1)
-% plot(lambda,I_lambda100fs_uv)
-% grid on
-% 
-% subplot(2,1,2)
-% plot(f,I_f100fs_uv)
-% grid on
-% 
-% figure
-% subplot(2,1,1)
-% plot(lambda,I_lambda100fs_ir)
-% grid on
-% 
-% subplot(2,1,2)
-% plot(f,I_f100fs_ir)
-% grid on
-
-%w=2*pi*f;
-% I_w10fs=zeros(size(I_f10fs));
-% I_w100fs_uv=zeros(size(I_f100fs_uv));
-% I_w100fs_ir=zeros(size(I_f100fs_ir));
-% for i=1:length(w)
-%     I_w10fs(i)=I_f10fs(i)/(2*pi);
-%     I_w100fs_uv(i)=I_f100fs_uv(i)/(2*pi);
-%     I_w100fs_ir(i)=I_f100fs_ir(i)/(2*pi);
-% end
-
-% subplot(2,1,1)
-% plot(lambda,I_lambda10fs)
-% grid on
-% 
-% subplot(2,1,2)
-% plot(w,I_w10fs)
-% grid on
-% 
-% figure
-% subplot(2,1,1)
-% plot(lambda,I_lambda100fs_uv)
-% grid on
-% 
-% subplot(2,1,2)
-% plot(w,I_w100fs_uv)
-% grid on
-% 
-% figure
-% subplot(2,1,1)
-% plot(lambda,I_lambda100fs_ir)
-% grid on
-% 
-% subplot(2,1,2)
-% plot(w,I_w100fs_ir)
-% grid on
-
-% I_t10fs=real(ifft(I_w10fs));
-% 
-% figure
-% subplot(2,1,1)
-% plot(w,I_w10fs)
-% xlabel('$\omega$ rad/s','Interpreter','latex')
-% grid on
-% subplot(2,1,2)
-% plot(t,I_t10fs)
-% xlabel('$t$ s')
-% grid on
-% title('10 fs laser')
-% 
-% I_t100fs_uv=real(ifft(I_w100fs_uv));
-% 
-% figure
-% subplot(2,1,1)
-% plot(w,I_w100fs_uv)
-% xlabel('$\omega$ rad/s','Interpreter','latex')
-% grid on
-% subplot(2,1,2)
-% plot(t,I_t100fs_uv)
-% xlabel('$t$ s')
-% grid on
-% 
-% I_t100fs_ir=real(ifft(I_w100fs_ir));
-% 
-% figure
-% subplot(2,1,1)
-% plot(w,I_w100fs_ir)
-% xlabel('$\omega$ rad/s','Interpreter','latex')
-% grid on
-% subplot(2,1,2)
-% plot(t,I_t100fs_ir)
-% xlabel('$t$ s')
-% grid on
-
-w=linspace(-10,10,1001);
-
-t=zeros(size(w));
-for i=1:length(w)
-    t(length(w)-i+1)=w(i);
+t=zeros(size(f));
+for i=1:length(f)
+    t(length(f)-i+1)=1/f(i);
 end
+
+Iftest=exp(-(f-8e14).^2/(4*(4e13)^2));
+
+spectrum=Iftest;
+pulse=fftshift(spectrum);
 
 figure
-%I_w=exp(-(w).^2/(4*(2)^2));
-I_w=zeros(size(w));
-for i=1:length(w)
-    if w(i)==0.2
-        I_w(i)=1;
-    end
-end
 subplot(2,1,1)
-plot(w,I_w)
+plot(f,spectrum)
+xlabel('Frequency $Hz$','interpreter','latex')
+ylabel('Amplitude')
 
 subplot(2,1,2)
-plot(t,fft(I_w),'o')
+plot(t,pulse)
+xlabel('Time $s$','interpreter','latex')
+ylabel('Amplitude')
 
-X = [0 1 3 1 0];
-Y = fft(X);
+fmirror=zeros(2*length(f)+1);
+Imirror=zeros(size(fmirror));
 
-figure
-subplot(3,1,1)
-plot(X)
-
-subplot(3,1,2)
-plot(abs(Y).^2)
-
+for i=1:length(f)
+    Imirror(i)=Iftest(length(f)-i+1);
+    Imirror(i+length(f)+1)=I_ftest(i);
+end
