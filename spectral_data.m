@@ -30,6 +30,13 @@ t=(0:n-1)/(n*df);
 Iftest=exp(-(f-8e14).^2/(4*(0.5e13)^2));
 
 spectrum=If10fs;
+
+for i=1:n
+    if spectrum(i)<=0.01*max(spectrum)
+        spectrum(i)=0;
+    end
+end
+
 pulse=ifft(spectrum);
 
 figure
@@ -38,7 +45,20 @@ plot(f,spectrum)
 xlabel('Frequency $Hz$','interpreter','latex')
 ylabel('Amplitude')
 
+It=abs(ifftshift(pulse));
 subplot(2,1,2)
-plot(t,abs(ifftshift(pulse)))
+plot(t,It)
 xlabel('Time $s$','interpreter','latex')
 ylabel('Amplitude')
+
+Iprofile=[];
+tprofile=[];
+for i=1:n
+    if It(i)>=0.005*max(It)
+        Iprofile=[Iprofile,It(i)];
+        tprofile=[tprofile,t(i)];
+    end
+end
+
+figure
+plot(tprofile,Iprofile)
