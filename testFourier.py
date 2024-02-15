@@ -43,9 +43,9 @@ for i in range(n):
 df=(max(f)-min(f))/n
 t=np.arange(0,n)/(n*df)
 
-Iftest=np.exp(-(f-4e14)**2/(4*(0.1e13)**2))
+Iftest=np.exp(-(f-4e14)**2/(4*(0.5e13)**2))
 
-spectrum=If100fsuv
+spectrum=If10fs
 
 for i in range(n): # I use this section to "clean up" the measured spectrum in lambda
     if spectrum[i]<=0.1*max(spectrum):
@@ -64,10 +64,12 @@ Itmp=abs(pulse)
 plt.subplot(2,1,2)
 line2,=ax2.plot(t,Itmp)
 ax2.set_xlabel(r'Time $t\ s$', fontsize=16)
-ax2.set_ylabel('Amplitude$', fontsize=16)
+ax2.set_ylabel('Amplitude', fontsize=16)
 ax2.set_xlim([min(t),max(t)])
 
 plt.show()
+
+#fig.savefig("10fstotime.pdf",bbox_inches='tight')
 
 It=np.zeros(n)
 
@@ -82,3 +84,5 @@ t=t[:len(It)]
 
 plt.plot(t,It)
 plt.show()
+
+fig.savefig("100fsuvtotime_nbg.pdf",bbox_inches='tight')

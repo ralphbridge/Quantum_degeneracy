@@ -46,28 +46,28 @@ t=np.linspace(-tmax,tmax,2000)
 ##################################################################################################################
 ############################################################################################### Slider
 
-init_alpha=0.5e28
+init_alpha=1.3e29
 
 # Create the figure and the line that we will manipulate
 fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
 
-line1,=ax1.plot(t,E(t,init_alpha),lw=2)
+line1,=ax1.plot(t,E(t,init_alpha),lw=1)
 ax1.set_xlabel(r'Time $t\ s$', fontsize=16)
 ax1.set_ylabel('$E\ V/m$', fontsize=16)
 ax1.set_title(r'Electric field', fontsize=16, color='r')
 ax1.set_xlim([-tmax,tmax])
 
-line2,=ax2.plot(t,S_l(t,init_alpha),lw=2)
+line2,=ax2.plot(t,S_l(t,init_alpha),lw=1)
 ax2.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
 ax2.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
 ax2.set_title(r'Linear autocorrelator', fontsize=16, color='r')
-ax2.set_xlim([-tmax,tmax])
+ax2.set_xlim([-0.8*tmax,0.8*tmax])
 
-line3,=ax3.plot(t,S_q(t,init_alpha),lw=2)
+line3,=ax3.plot(t,S_q(t,init_alpha),lw=1)
 ax3.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
 ax3.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
 ax3.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
-ax3.set_xlim([-tmax,tmax])
+ax3.set_xlim([-0.8*tmax,0.8*tmax])
 
 # adjust the main plot to make room for the sliders
 fig.subplots_adjust(left=0.4, bottom=0.4)
@@ -81,6 +81,8 @@ alpha_slider=Slider(
     valmax=1e30,
     valinit=init_alpha,
 )
+
+#fig.savefig("chirp.pdf",bbox_inches='tight')
 
 # The function to be called anytime a slider's value changes
 def update(val):
