@@ -8,15 +8,15 @@ S=readmatrix("spectrum.xlsx");
 n=length(S)-1;
 
 lambda=S(2:n+1,1)*1e-9;
-Ilambda10fs=(S(2:n+1,2)-min(S(2:n+1,2)))/max(S(2:n+1,2));
-Ilambda100fs_uv=(S(2:n+1,3)-min(S(2:n+1,3)))/max(S(2:n+1,3));
+Ilambda10fs=(S(1:n+1,2)-min(S(2:n+1,2)))/max(S(2:n+1,2));
+Ilambda100fs_uv=(S(1:n+1,3)-min(S(2:n+1,3)))/max(S(2:n+1,3));
 Ilambda100fs_ir=(S(2:n+1,4)-min(S(2:n+1,4)))/max(S(2:n+1,4));
 
+f=zeros(n,1);
 If10fs=zeros(n,1);
 If100fs_uv=zeros(n,1);
 If100fs_ir=zeros(n,1);
 
-f=zeros(n,1);
 for i=1:n
     f(n-i+1)=c/lambda(i);
     If10fs(n-i+1)=lambda(i)^2*Ilambda10fs(i)/c;
@@ -51,14 +51,20 @@ plot(t,It)
 xlabel('Time $s$','interpreter','latex')
 ylabel('Amplitude')
 
-Iprofile=[];
-tprofile=[];
+Iprofile=zeros(size(It));
+tprofile=zeros(size(t));
+j=1;
 for i=1:n
     if It(i)>=0.005*max(It)
-        Iprofile=[Iprofile,It(i)];
-        tprofile=[tprofile,t(i)];
+        Iprofile(j)=It(i);
+        tprofile(j)=t(i);
+        j=j+1;
     end
 end
+
+Iprofile=Iprofile(find(Iprofile,1,'first'):find(Iprofile,1,'last'));
+tprofile=tprofile(find(tprofile,1,'first'):find(tprofile,1,'last'));
+tprofile=tprofile-min(tprofile);
 
 figure
 plot(tprofile,Iprofile)

@@ -55,19 +55,19 @@ line1,=ax1.plot(t,E(t,init_alpha),lw=2)
 ax1.set_xlabel(r'Time $t\ s$', fontsize=16)
 ax1.set_ylabel('$E\ V/m$', fontsize=16)
 ax1.set_title(r'Electric field', fontsize=16, color='r')
-ax1.set_xlim([-0.5*tmax,0.5*tmax])
+ax1.set_xlim([-tmax,tmax])
 
 line2,=ax2.plot(t,S_l(t,init_alpha),lw=2)
 ax2.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
 ax2.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
 ax2.set_title(r'Linear autocorrelator', fontsize=16, color='r')
-ax2.set_xlim([-0.5*tmax,0.5*tmax])
+ax2.set_xlim([-tmax,tmax])
 
 line3,=ax3.plot(t,S_q(t,init_alpha),lw=2)
 ax3.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
 ax3.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
 ax3.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
-ax3.set_xlim([-0.5*tmax,0.5*tmax])
+ax3.set_xlim([-tmax,tmax])
 
 # adjust the main plot to make room for the sliders
 fig.subplots_adjust(left=0.4, bottom=0.4)
