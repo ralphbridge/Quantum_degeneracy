@@ -85,4 +85,4 @@ t=t[:len(It)]
 plt.plot(t,It)
 plt.show()
 
-fig.savefig("100fsuvtotime_nbg.pdf",bbox_inches='tight')
+#fig.savefig("100fsuvtotime_nbg.pdf",bbox_inches='tight')
