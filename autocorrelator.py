@@ -17,29 +17,30 @@ I0=1e14 # laser intensity
 FWHM=8e-15
 sigma=c*FWHM/(2*np.sqrt(2*np.log(2)))
 #E0=np.sqrt(2*I0/(c*eps0))
-tmax=0.5e-13
+#tmax=0.5e-13
 
 # Definitions for Electric fields and Intensity as functions of z and t
 def E(t,alpha,E0):
     Ef=np.zeros(len(t))
     for j in range(len(t)):
-        Ef=E0[j]*np.exp(-((c*t[j])/(2*sigma))**2)*np.cos((w+alpha*t[j])*t[j])
+        #Ef[j]=E0*np.exp(-((c*t[j])/(2*sigma))**2)*np.cos((w+alpha*t[j])*t[j])
+        Ef[j]=E0[j]*np.cos((w+alpha*t[j])*t[j])
         j+=1
     return Ef
 
-def S_l(t,alpha):
-    S=np.zeros(len(t))
-    j=0
-    for tau in t:
-	    S[j]=np.trapz((E(t,alpha)+E(t+tau,alpha))**2,t)
-	    j+=1
-    return S
+# def S_l(t,alpha):
+#     S=np.zeros(len(t))
+#     j=0
+#     for tau in t:
+# 	    S[j]=np.trapz((E(t,alpha)+E(t+tau,alpha))**2,t)
+# 	    j+=1
+#     return S
 
-def S_q(t,alpha):
+def S_q(t,alpha,E0):
     S=np.zeros(len(t))
     j=0
     for tau in t:
-	    S[j]=np.trapz(((E(t,alpha)+E(t+tau,alpha))**2)**2,t)
+	    S[j]=np.trapz(((E(t,alpha,E0)+E(t+tau,alpha,E0))**2)**2,t)
 	    j+=1
     return S
 
@@ -79,19 +80,21 @@ def pulse_profile():
         If100fsuv[n-i-1]=(lam[i]**2)*Ilam100fsuv[i]/c
         If100fsir[n-i-1]=(lam[i]**2)*Ilam100fsir[i]/c
 
-    #f=np.linspace(0.5e13,10e14,n)
+    #n=10000
     df=(max(f)-min(f))/n
     t=np.arange(0,n)/(n*df)
-
+    np.exp(-((c*t[j])/(2*sigma))**2)
     Iftest=np.exp(-(f-4e14)**2/(4*(0.5e13)**2))
 
-    spectrum=If10fs
+    spectrum=Iftest
 
     for i in range(n): # I use this section to "clean up" the measured spectrum in lambda
-        if spectrum[i]<=0.1*max(spectrum):
+        if spectrum[i]<=0.5*max(spectrum):
             spectrum[i]=0
 
     pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
+    
+    Itmp=abs(pulse)
 
     #fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
     #plt.subplot(2,1,1)
@@ -100,7 +103,6 @@ def pulse_profile():
     #ax1.set_ylabel('Amplitude', fontsize=16)
     #ax1.set_xlim([min(f),max(f)])
 
-    #Itmp=abs(pulse)
     #plt.subplot(2,1,2)
     #line2,=ax2.plot(t,Itmp)
     #ax2.set_xlabel(r'Time $t\ s$', fontsize=16)
@@ -124,9 +126,10 @@ def pulse_profile():
     plt.plot(t,It)
     plt.show()
 
-    Et=np.sqrt(2*I/(c*eps0))
+    Et=np.sqrt(2*It/(c*eps0))
+    print(len(t))
 
-    return Et,t
+    return (Et,t)
 
     #fig.savefig("100fsuvtotime_nbg.pdf",bbox_inches='tight')
 
@@ -135,26 +138,30 @@ def pulse_profile():
 ##################################################################################################################
 ############################################################################################### Slider
 
-init_alpha=1.3e29
+init_alpha=0.1e29
 
 E0,t=pulse_profile()
+
+tmax=max(t)
 
 Efield=E(t,init_alpha,E0)
 
 # Create the figure and the line that we will manipulate
-fig,(ax1,ax2)=plt.subplots(3,1,tight_layout=True)
+fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 
 line1,=ax1.plot(t,Efield,lw=1)
 ax1.set_xlabel(r'Time $t\ s$', fontsize=16)
 ax1.set_ylabel('$E\ V/m$', fontsize=16)
 ax1.set_title(r'Electric field', fontsize=16, color='r')
-ax1.set_xlim([-tmax,tmax])
+ax1.set_xlim([0.4*tmax,0.6*tmax])
 
-line2,=ax2.plot(t,S_q(t,init_alpha),lw=1)
+Squad=S_q(t,init_alpha,E0)
+
+line2,=ax2.plot(t,Squad,lw=1)
 ax2.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
 ax2.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
 ax2.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
-ax2.set_xlim([-0.8*tmax,0.8*tmax])
+ax2.set_xlim([0.4*tmax,0.6*tmax])
 
 # adjust the main plot to make room for the sliders
 fig.subplots_adjust(left=0.4, bottom=0.4)
@@ -173,8 +180,8 @@ alpha_slider=Slider(
 
 # The function to be called anytime a slider's value changes
 def update(val):
-    line1.set_ydata(E(t,alpha_slider.val))
-    line2.set_ydata(S_q(t,alpha_slider.val))
+    line1.set_ydata(E(t,alpha_slider.val,E0))
+    line2.set_ydata(S_q(t,alpha_slider.val,E0))
     fig.canvas.draw_idle()
 
 # register the update function with each slider

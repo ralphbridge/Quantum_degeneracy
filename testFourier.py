@@ -45,11 +45,11 @@ t=np.arange(0,n)/(n*df)
 
 Iftest=np.exp(-(f-4e14)**2/(4*(0.5e13)**2))
 
-spectrum=If10fs
+spectrum=If100fsuv
 
-for i in range(n): # I use this section to "clean up" the measured spectrum in lambda
-    if spectrum[i]<=0.1*max(spectrum):
-        spectrum[i]=0
+#for i in range(n): # I use this section to "clean up" the measured spectrum in lambda
+#    if spectrum[i]<=0.1*max(spectrum):
+#        spectrum[i]=0
 
 pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
 
