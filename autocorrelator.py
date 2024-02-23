@@ -53,7 +53,7 @@ def pulse_profile():
 	    for i in range (0,np.size(S,0)):
 		    #print(S[i][j])
 		    if j==0:
-    			lam[i]=(S[i][j])
+    			lam[i]=(S[i][j])*1e-9
 		    elif j==1:
     			Il[i]=S[i][j]
 		    elif j==2:
@@ -100,7 +100,7 @@ def pulse_profile():
     
     #################
     
-    Iltest=np.exp(-((lam-800)*1e-9/(2*c*sigmat))**2)
+    Iltest=np.exp(-((lam-800e-9)/(2*20e-9))**2)
 
     spectruml=Iltest
 
@@ -108,7 +108,7 @@ def pulse_profile():
     spectrum=np.zeros(n)
 
     for i in range(n):
-        f[n-i-1]=c/(lam[i]*1e-9)
+        f[n-i-1]=c/(lam[i])
         spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
 
     df=(max(f)-min(f))/n
@@ -124,10 +124,10 @@ def pulse_profile():
 
     fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
     plt.subplot(2,1,1)
-    line1,=ax1.plot(lam,spectrum)
-    ax1.set_xlabel(r'Frequency $f\ Hz$', fontsize=16)
+    line1,=ax1.plot(lam*1e9,spectruml)
+    ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
     ax1.set_ylabel('Amplitude', fontsize=16)
-    ax1.set_xlim([min(f),max(f)])
+    #ax1.set_xlim([min(lam),max(lam)])
 
     plt.subplot(2,1,2)
     line2,=ax2.plot(t*1e15,Itmp)
@@ -151,7 +151,12 @@ def pulse_profile():
     
     Itfinal=Itmp
 
-    plt.plot(t,Itfinal)
+    plt.plot(t*1e15,Itfinal,lw=1)
+    plt.xlabel(r'Time $t\ fs$', fontsize=16)
+    plt.ylabel(r'Intensity $I(t)\ J/m^2$', fontsize=16)
+    plt.title(r'Intensity profile as function of time', fontsize=16, color='r')
+    plt.xlim([-20,20])
+
     plt.show()
     
     del It, Itmp
