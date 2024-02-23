@@ -2,39 +2,35 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 import pandas as pd
+from scipy.interpolate import interp1d
 
-global lam,E0,sigma,eps0,c
+global lam,E0,sigma,eps0,c,sigmat,E00
 
 eps0=8.85e-12
 c=3e8 # group velocity
 vp=c # phase velocity
 lam=800e-9 # laser frequency
 k=2*np.pi/lam
-w=3*k*vp
-#alpha=1e29 # Chirp correction
-I0=1e14 # laser intensity
-#sigma=5*lam # laser variance
+w=k*vp
 FWHM=8e-15
-sigma=c*FWHM/(2*np.sqrt(2*np.log(2)))
-#E0=np.sqrt(2*I0/(c*eps0))
-#tmax=0.5e-13
+sigmat=FWHM/(2*np.sqrt(2*np.log(2)))
+E00=np.sqrt(2*1e14/(c*eps0))
 
-# Definitions for Electric fields and Intensity as functions of z and t
 def E(t,alpha,E0):
     Ef=np.zeros(len(t))
     for j in range(len(t)):
-        #Ef[j]=E0*np.exp(-((c*t[j])/(2*sigma))**2)*np.cos((w+alpha*t[j])*t[j])
-        Ef[j]=E0[j]*np.cos((w+alpha*t[j])*t[j])
+        Ef[j]=E00*np.exp(-((t[j])/(2*sigmat))**2)*np.cos((w+alpha*t[j])*t[j])
+        #Ef[j]=E00*E0[j]*np.cos((w+alpha*t[j])*t[j])
         j+=1
     return Ef
 
-# def S_l(t,alpha):
-#     S=np.zeros(len(t))
-#     j=0
-#     for tau in t:
-# 	    S[j]=np.trapz((E(t,alpha)+E(t+tau,alpha))**2,t)
-# 	    j+=1
-#     return S
+def S_l(t,alpha,E0):
+    S=np.zeros(len(t))
+    j=0
+    for tau in t:
+ 	    S[j]=np.trapz((E(t,alpha,E0)+E(t+tau,alpha,E0))**2,t)
+ 	    j+=1
+    return S
 
 def S_q(t,alpha,E0):
     S=np.zeros(len(t))
@@ -45,123 +41,161 @@ def S_q(t,alpha,E0):
     return S
 
 def pulse_profile():
-    S=pd.read_excel("spectrum.xlsx",skiprows=1).to_numpy()
+    S=pd.read_excel("spectrum.xlsx").to_numpy()
     n=np.size(S,0)
 
     lam=np.zeros(np.size(S,0))
-    Ilam10fs=np.zeros(np.size(S,0))
-    Ilam100fsuv=np.zeros(np.size(S,0))
-    Ilam100fsir=np.zeros(np.size(S,0))
+    Il=np.zeros(np.size(S,0))
+    Iluv=np.zeros(np.size(S,0))
+    Ilir=np.zeros(np.size(S,0))
 
     for j in range(0,np.size(S,1)):
 	    for i in range (0,np.size(S,0)):
 		    #print(S[i][j])
 		    if j==0:
-    			lam[i]=(S[i][j])*1e-9
+    			lam[i]=(S[i][j])
 		    elif j==1:
-    			Ilam10fs[i]=S[i][j]
+    			Il[i]=S[i][j]
 		    elif j==2:
-    			Ilam100fsuv[i]=S[i][j]
+    			Iluv[i]=S[i][j]
 		    else:
-			    Ilam100fsir[i]=S[i][j]
+			    Ilir[i]=S[i][j]
 
-    Ilam10fs=(Ilam10fs-min(Ilam10fs))/max(Ilam10fs)
-    Ilam100fsuv=(Ilam100fsuv-min(Ilam100fsuv))/max(Ilam100fsuv)
-    Ilam100fsir=(Ilam100fsir-min(Ilam100fsir))/max(Ilam100fsir)
+    Il=(Il-min(Il))/max(Il)
+    Iluv=(Iluv-min(Iluv))/max(Iluv)
+    Ilir=(Ilir-min(Ilir))/max(Ilir)
+    
+    ######## Interpolating section
+
+    # lamtemp=np.zeros(2*n-1)
+    # Iltemp=np.zeros(2*n-1)
+    # Iluvtemp=np.zeros(2*n-1)
+    # Ilirtemp=np.zeros(2*n-1)
+    
+    # Il_interp=interp1d(lam,Il)
+    # Iluv_interp=interp1d(lam,Iluv)
+    # Ilir_interp=interp1d(lam,Ilir)
+
+    # for i in range(n):
+    #     lamtemp[2*i]=lam[i]
+    #     Iltemp[2*i]=Il[i]
+    #     Iluvtemp[2*i]=Iluv[i]
+    #     Ilirtemp[2*i]=Ilir[i]
+    #     if i<n-1:
+    #         lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
+    #         Iltemp[2*i+1]=Il_interp(lamtemp[2*i+1])
+    #         Iluvtemp[2*i+1]=Iluv_interp(lamtemp[2*i+1])
+    #         Ilirtemp[2*i+1]=Ilir_interp(lamtemp[2*i+1])
+
+    # n=2*n-1
+    # lam=lamtemp
+    
+    # del Il, Iluv, Ilir
+    
+    # Il=Iltemp
+    # Iluv=Iluvtemp
+    # Ilir=Ilirtemp
+    
+    # del lamtemp, Iltemp, Iluvtemp, Ilirtemp
+    
+    #################
+    
+    Iltest=np.exp(-((lam-800)*1e-9/(2*c*sigmat))**2)
+
+    spectruml=Iltest
 
     f=np.zeros(n)
-    If10fs=np.zeros(n)
-    If100fsuv=np.zeros(n)
-    If100fsir=np.zeros(n)
+    spectrum=np.zeros(n)
 
     for i in range(n):
-        f[n-i-1]=c/lam[i]
-        If10fs[n-i-1]=(lam[i]**2)*Ilam10fs[i]/c
-        If100fsuv[n-i-1]=(lam[i]**2)*Ilam100fsuv[i]/c
-        If100fsir[n-i-1]=(lam[i]**2)*Ilam100fsir[i]/c
+        f[n-i-1]=c/(lam[i]*1e-9)
+        spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
 
-    #n=10000
     df=(max(f)-min(f))/n
-    t=np.arange(0,n)/(n*df)
-    np.exp(-((c*t[j])/(2*sigma))**2)
-    Iftest=np.exp(-(f-4e14)**2/(4*(0.5e13)**2))
+    t=np.arange(-n/2,n/2)/(n*df)
 
-    spectrum=Iftest
-
-    for i in range(n): # I use this section to "clean up" the measured spectrum in lambda
-        if spectrum[i]<=0.5*max(spectrum):
-            spectrum[i]=0
+    # for i in range(n): # I use this section to "clean up" the measured spectrum in lambda
+    #     if spectrum[i]<=0.5*max(spectrum):
+    #         spectrum[i]=0
 
     pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
     
     Itmp=abs(pulse)
 
-    #fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-    #plt.subplot(2,1,1)
-    #line1,=ax1.plot(f,spectrum)
-    #ax1.set_xlabel(r'Frequency $f\ Hz$', fontsize=16)
-    #ax1.set_ylabel('Amplitude', fontsize=16)
-    #ax1.set_xlim([min(f),max(f)])
+    fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+    plt.subplot(2,1,1)
+    line1,=ax1.plot(lam,spectrum)
+    ax1.set_xlabel(r'Frequency $f\ Hz$', fontsize=16)
+    ax1.set_ylabel('Amplitude', fontsize=16)
+    ax1.set_xlim([min(f),max(f)])
 
-    #plt.subplot(2,1,2)
-    #line2,=ax2.plot(t,Itmp)
-    #ax2.set_xlabel(r'Time $t\ s$', fontsize=16)
-    #ax2.set_ylabel('Amplitude', fontsize=16)
-    #ax2.set_xlim([min(t),max(t)])
+    plt.subplot(2,1,2)
+    line2,=ax2.plot(t*1e15,Itmp)
+    ax2.set_xlabel(r'Time $t\ s$', fontsize=16)
+    ax2.set_ylabel('Amplitude', fontsize=16)
+    ax2.set_xlim([-50,50])
 
-    #plt.show()
+    plt.show()
     #fig.savefig("10fstotime.pdf",bbox_inches='tight')
 
     It=np.zeros(n)
 
-    j=1
-    for i in range(n):
-	    if Itmp[i]>=0.005*max(Itmp):
-		    It[j]=Itmp[i]
-		    j+=1
-		
-    It=np.trim_zeros(It)
-    t=t[:len(It)]
+#     j=1
+#     for i in range(n):
+# 	    if Itmp[i]>=0.005*max(Itmp):
+# 		    It[j]=Itmp[i]
+# 		    j+=1
+# 		
+#     It=np.trim_zeros(It)
+#     t=t[:len(It)]
+    
+    Itfinal=Itmp
 
-    plt.plot(t,It)
+    plt.plot(t,Itfinal)
     plt.show()
+    
+    del It, Itmp
 
-    Et=np.sqrt(2*It/(c*eps0))
+    Et=np.sqrt(2*Itfinal/(c*eps0))
     print(len(t))
 
     return (Et,t)
 
     #fig.savefig("100fsuvtotime_nbg.pdf",bbox_inches='tight')
 
-#t=np.linspace(-tmax,tmax,2000)
-
 ##################################################################################################################
 ############################################################################################### Slider
 
-init_alpha=0.1e29
+init_alpha=0
 
 E0,t=pulse_profile()
-
-tmax=max(t)
 
 Efield=E(t,init_alpha,E0)
 
 # Create the figure and the line that we will manipulate
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
 
-line1,=ax1.plot(t,Efield,lw=1)
-ax1.set_xlabel(r'Time $t\ s$', fontsize=16)
+line1,=ax1.plot(t*1e15,Efield,lw=1)
+ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel('$E\ V/m$', fontsize=16)
 ax1.set_title(r'Electric field', fontsize=16, color='r')
-ax1.set_xlim([0.4*tmax,0.6*tmax])
+ax1.set_xlim([-50,50])
+
+Slin=S_l(t,init_alpha,E0)
+
+line2,=ax2.plot(t*1e15,Slin,lw=1)
+ax2.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
+ax2.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
+ax2.set_title(r'Linear detector', fontsize=16, color='r')
+ax2.set_xlim([-50,50])
 
 Squad=S_q(t,init_alpha,E0)
 
-line2,=ax2.plot(t,Squad,lw=1)
-ax2.set_xlabel(r'Time difference $\tau\ s$', fontsize=16)
-ax2.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
-ax2.set_title(r'Quadratic autocorrelator', fontsize=16, color='r')
-ax2.set_xlim([0.4*tmax,0.6*tmax])
+line3,=ax3.plot(t*1e15 ,Squad,lw=1)
+ax3.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
+ax3.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
+ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
+ax3.set_xlim([-50,50])
 
 # adjust the main plot to make room for the sliders
 fig.subplots_adjust(left=0.4, bottom=0.4)
@@ -182,6 +216,7 @@ alpha_slider=Slider(
 def update(val):
     line1.set_ydata(E(t,alpha_slider.val,E0))
     line2.set_ydata(S_q(t,alpha_slider.val,E0))
+    line3.set_ydata(S_q(t,alpha_slider.val,E0))
     fig.canvas.draw_idle()
 
 # register the update function with each slider
