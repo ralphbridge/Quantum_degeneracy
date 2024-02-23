@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 import pandas as pd
 
 c=299792458
@@ -16,7 +17,7 @@ for j in range(0,np.size(S,1)):
 	for i in range (0,np.size(S,0)):
 		#print(S[i][j])
 		if j==0:
-			lam[i]=(S[i][j])*1e-9
+			lam[i]=(S[i][j])
 		elif j==1:
 			Ilam10fs[i]=S[i][j]
 		elif j==2:
@@ -28,13 +29,35 @@ Ilam10fs=(Ilam10fs-min(Ilam10fs))/max(Ilam10fs)
 Ilam100fsuv=(Ilam100fsuv-min(Ilam100fsuv))/max(Ilam100fsuv)
 Ilam100fsir=(Ilam100fsir-min(Ilam100fsir))/max(Ilam100fsir)
 
+lamtemp=np.zeros(2*n-1)
+Il=np.zeros(2*n-1)
+Iluv=np.zeros(2*n-1)
+Ilir=np.zeros(2*n-1)
+
+Il_interp=interp1d(lam,Ilam10fs)
+Iluv_interp=interp1d(lam,Ilam100fsuv)
+Ilir_interp=interp1d(lam,Ilam100fsir)
+
+for i in range(n-1):
+    lamtemp[2*i]=lam[i]
+    lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
+    Il[2*i]=Ilam10fs[i]
+    Il[2*i+1]=Il_interp((lam[i+1]+lam[i])/2)
+    Iluv[2*i]=Ilam100fsuv[i]
+    Iluv[2*i+1]=Iluv_interp((lam[i+1]+lam[i])/2)
+    Ilir[2*i]=Ilam100fsir[i]
+    Ilir[2*i+1]=Ilir_interp((lam[i+1]+lam[i])/2)
+
+lam=lamtemp
+n=2*n-1
+
 f=np.zeros(n)
 If10fs=np.zeros(n)
 If100fsuv=np.zeros(n)
 If100fsir=np.zeros(n)
 
 for i in range(n):
-    f[n-i-1]=c/lam[i]
+    f[n-i-1]=c/(lam[i]*1e-9)
     If10fs[n-i-1]=(lam[i]**2)*Ilam10fs[i]/c
     If100fsuv[n-i-1]=(lam[i]**2)*Ilam100fsuv[i]/c
     If100fsir[n-i-1]=(lam[i]**2)*Ilam100fsir[i]/c
