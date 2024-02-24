@@ -30,13 +30,13 @@ def E(t,alpha,E0,attempt):
         ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
         ax1.set_ylabel('Amplitude', fontsize=16)
         ax1.set_title(r'Attempt %d' % attempt, fontsize=16, color='r')
-        ax1.set_xlim([-50,50])
+        #ax1.set_xlim([-50,50])
 
         plt.subplot(2,1,2)
         line2,=ax2.plot(t*1e15,np.multiply(E0,E00*np.cos((w+alpha*t)*t)))
         ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
         ax2.set_ylabel('Amplitude', fontsize=16)
-        ax2.set_xlim([-50,50])
+        #ax2.set_xlim([-50,50])
     
     return Ef
 
@@ -189,6 +189,7 @@ def pulse_profile():
     del It, Itmp
 
     Et=np.sqrt(2*Itfinal/(c*eps0))
+    Et=Et/max(Et)
     print(len(t))
 
     return (Et,t)
