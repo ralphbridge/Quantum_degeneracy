@@ -16,55 +16,24 @@ FWHM=8e-15
 sigmat=FWHM/(2*np.sqrt(2*np.log(2)))
 E00=np.sqrt(2*1e14/(c*eps0))
 
-def E(t,alpha,E0,attempt):
+def E(t,alpha,E0):
     Ef=np.zeros(len(t))
     for j in range(len(t)):
-        Ef[j]=E00*np.exp(-((t[j])/(2*sigmat))**2)*np.cos((w+alpha*t[j])*t[j])
-        #Ef[j]=E00*E0[j]*np.cos((w+alpha*t[j])*t[j])
+        Ef[j]=E00*E0[j]*np.cos((w+alpha*t[j])*t[j])
         j+=1
-    
-    if attempt!=0:
-        fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-        plt.subplot(2,1,1)
-        line1,=ax1.plot(t*1e15,E00*np.exp(-((t)/(2*sigmat))**2)*np.cos((w+alpha*t)*t))
-        ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-        ax1.set_ylabel('Amplitude', fontsize=16)
-        ax1.set_title(r'Attempt %d' % attempt, fontsize=16, color='r')
-        #ax1.set_xlim([-50,50])
-
-        plt.subplot(2,1,2)
-        line2,=ax2.plot(t*1e15,np.multiply(E0,E00*np.cos((w+alpha*t)*t)))
-        ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-        ax2.set_ylabel('Amplitude', fontsize=16)
-        #ax2.set_xlim([-50,50])
-    
     return Ef
 
 def S_l(t,alpha,E0):
     S=np.zeros(len(t))
-    j=0
-    attempt=10
-    for tau in t:
-        if tau==min(t) or tau==max(t):
-            S[j]=np.trapz((E(t,alpha,E0,attempt)+E(t+tau,alpha,E0,attempt))**2,t)
-            attempt+=1
-        else:
-            S[j]=np.trapz((E(t,alpha,E0,0)+E(t+tau,alpha,E0,0))**2,t)
-        j+=1
+    S=2*np.trapz((E(t,alpha,E0))**2,t)
+    S+=2*np.convolve(E(t,alpha,E0),E(t,alpha,E0),mode='same')
     return S
 
 def S_q(t,alpha,E0):
     S=np.zeros(len(t))
-    j=0
-    attempt=20
-    for tau in t:
-        if tau==min(t) or tau==max(t):
-            S[j]=S[j]=np.trapz(((E(t,alpha,E0,attempt)+E(t+tau,alpha,E0,attempt))**2)**2,t)
-            attempt+=1
-        else:
-            S[j]=np.trapz((E(t,alpha,E0,0)+E(t+tau,alpha,E0,0))**2,t)
-
-        j+=1
+    S=2*np.trapz((E(t,alpha,E0))**4,t)
+    S+=8*np.convolve((E(t,alpha,E0))**3,E(t,alpha,E0),mode='same')
+    S+=6*np.convolve((E(t,alpha,E0))**2,(E(t,alpha,E0))**2,mode='same')
     return S
 
 def pulse_profile():
@@ -92,44 +61,35 @@ def pulse_profile():
     Iluv=(Iluv-min(Iluv))/max(Iluv)
     Ilir=(Ilir-min(Ilir))/max(Ilir)
     
+    Iltest1=np.exp(-((lam-756e-9)/(2*10e-9))**2) # Single Gaussian
+    Iltest2=np.exp(-((lam-756e-9)/(2*8e-9))**2)+0.6*np.exp(-((lam-813e-9)/(2*20e-9))**2) # Double Gaussian
+
+    spectruml=Il
+    
     ######## Interpolating section
 
-    # lamtemp=np.zeros(2*n-1)
-    # Iltemp=np.zeros(2*n-1)
-    # Iluvtemp=np.zeros(2*n-1)
-    # Ilirtemp=np.zeros(2*n-1)
+    lamtemp=np.zeros(2*n-1)
+    spectrumltemp=np.zeros(2*n-1)
     
-    # Il_interp=interp1d(lam,Il)
-    # Iluv_interp=interp1d(lam,Iluv)
-    # Ilir_interp=interp1d(lam,Ilir)
+    spectruml_interp=interp1d(lam,spectruml)
 
-    # for i in range(n):
-    #     lamtemp[2*i]=lam[i]
-    #     Iltemp[2*i]=Il[i]
-    #     Iluvtemp[2*i]=Iluv[i]
-    #     Ilirtemp[2*i]=Ilir[i]
-    #     if i<n-1:
-    #         lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
-    #         Iltemp[2*i+1]=Il_interp(lamtemp[2*i+1])
-    #         Iluvtemp[2*i+1]=Iluv_interp(lamtemp[2*i+1])
-    #         Ilirtemp[2*i+1]=Ilir_interp(lamtemp[2*i+1])
+    for i in range(n):
+        lamtemp[2*i]=lam[i]
+        spectrumltemp[2*i]=spectruml[i]
+        if i<n-1:
+            lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
+            spectrumltemp[2*i+1]=spectruml_interp(lamtemp[2*i+1])
 
-    # n=2*n-1
-    # lam=lamtemp
+    n=2*n-1
+    lam=lamtemp
     
-    # del Il, Iluv, Ilir
+    del spectruml
     
-    # Il=Iltemp
-    # Iluv=Iluvtemp
-    # Ilir=Ilirtemp
+    spectruml=spectrumltemp
     
-    # del lamtemp, Iltemp, Iluvtemp, Ilirtemp
+    del spectrumltemp
     
     #################
-    
-    Iltest=np.exp(-((lam-800e-9)/(2*20e-9))**2)
-
-    spectruml=Iltest
 
     f=np.zeros(n)
     spectrum=np.zeros(n)
@@ -149,20 +109,20 @@ def pulse_profile():
     
     Itmp=abs(pulse)
 
-    # fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-    # plt.subplot(2,1,1)
-    # line1,=ax1.plot(lam*1e9,spectruml)
-    # ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
-    # ax1.set_ylabel('Amplitude', fontsize=16)
-    # #ax1.set_xlim([min(lam),max(lam)])
+    fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+    plt.subplot(2,1,1)
+    line1,=ax1.plot(lam*1e9,spectruml)
+    ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
+    ax1.set_ylabel('Amplitude', fontsize=16)
+    ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
 
-    # plt.subplot(2,1,2)
-    # line2,=ax2.plot(t*1e15,Itmp)
-    # ax2.set_xlabel(r'Time $t\ s$', fontsize=16)
-    # ax2.set_ylabel('Amplitude', fontsize=16)
-    # ax2.set_xlim([-50,50])
+    plt.subplot(2,1,2)
+    line2,=ax2.plot(t*1e15,Itmp)
+    ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
+    ax2.set_ylabel('Amplitude', fontsize=16)
+    ax2.set_xlim([-200,200])
 
-    # plt.show()
+    plt.show()
     #fig.savefig("10fstotime.pdf",bbox_inches='tight')
 
     It=np.zeros(n)
@@ -203,45 +163,55 @@ init_alpha=0
 
 E0,t=pulse_profile()
 
-Efield=E(t,init_alpha,E0,1)
+Efield=E(t,init_alpha,E0)
 Slin=S_l(t,init_alpha,E0)
 Squad=S_q(t,init_alpha,E0)
 
 # Create the figure and the line that we will manipulate
-# fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
+#fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
+fig,(ax1,ax3)=plt.subplots(2,1,tight_layout=True)
 
-# line1,=ax1.plot(t*1e15,Efield,lw=1)
-# ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-# ax1.set_ylabel('$E\ V/m$', fontsize=16)
-# ax1.set_title(r'Electric field', fontsize=16, color='r')
-# ax1.set_xlim([-50,50])
+line1,=ax1.plot(t*1e15,Efield,lw=1)
+ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax1.set_ylabel('$E\ V/m$', fontsize=16)
+ax1.set_title(r'Electric field', fontsize=16, color='r')
+ax1.set_xlim([-300,300])
 
 # line2,=ax2.plot(t*1e15,Slin,lw=1)
 # ax2.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
-# ax2.set_ylabel('$S_{linear}\ J/m^2$', fontsize=16)
+# ax2.set_ylabel('$S_{linear}\ W/m^2$', fontsize=16)
 # ax2.set_title(r'Linear detector', fontsize=16, color='r')
-# ax2.set_xlim([-50,50])
+# ax2.set_xlim([-300,300])
 
-# line3,=ax3.plot(t*1e15 ,Squad,lw=1)
-# ax3.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
-# ax3.set_ylabel('$S_{quadratic}\ J/m^2$', fontsize=16)
-# ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
-# ax3.set_xlim([-50,50])
+line3,=ax3.plot(t*1e15 ,Squad,lw=1)
+ax3.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
+ax3.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
+ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
+ax3.set_xlim([-300,300])
 
 # adjust the main plot to make room for the sliders
-# fig.subplots_adjust(left=0.4, bottom=0.4)
+fig.subplots_adjust(left=0.4, bottom=0.4)
 
-# # Make a horizontal slider to control the frequency.
-# axt=fig.add_axes([0.25, 0, 0.65, 0.03])
-# alpha_slider=Slider(
-#     ax=axt,
-#     label='Chirp',
-#     valmin=init_alpha,
-#     valmax=1e30,
-#     valinit=init_alpha,
-# )
+# Make a horizontal slider to control the frequency.
+axt=fig.add_axes([0.25, 0, 0.65, 0.03])
+alpha_slider=Slider(
+    ax=axt,
+    label='Chirp',
+    valmin=init_alpha,
+    valmax=1e30,
+    valinit=init_alpha,
+)
 
+plt.show()
 #fig.savefig("chirp.pdf",bbox_inches='tight')
+
+plt.plot(t*1e15,Squad,lw=1)
+plt.xlabel(r'Time $t\ fs$', fontsize=16)
+plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
+plt.title(r'Autocorrelation trace (nonlinear detector)', fontsize=16, color='r')
+plt.xlim([-200,200])
+
+plt.show()
 
 # The function to be called anytime a slider's value changes
 def update(val):
@@ -275,3 +245,4 @@ plt.show()
 # Change Intensity vs frequency for Intensity vs lambda in slides 16 out of 25
 # Add w+alpha*t discussion to justify why this was not an issue for Sam
 # Add title on slide(s?) 17 of 25
+# IMPORTANT: Ask Herman how does time axis re-scale in this process
