@@ -64,30 +64,30 @@ def pulse_profile():
     Iltest1=np.exp(-((lam-756e-9)/(2*10e-9))**2) # Single Gaussian
     Iltest2=np.exp(-((lam-756e-9)/(2*8e-9))**2)+0.6*np.exp(-((lam-813e-9)/(2*20e-9))**2) # Double Gaussian
 
-    spectruml=Il
+    spectruml=Ilir
     
     ######## Interpolating section
 
-    lamtemp=np.zeros(2*n-1)
-    spectrumltemp=np.zeros(2*n-1)
+    # lamtemp=np.zeros(2*n-1)
+    # spectrumltemp=np.zeros(2*n-1)
     
-    spectruml_interp=interp1d(lam,spectruml)
+    # spectruml_interp=interp1d(lam,spectruml)
 
-    for i in range(n):
-        lamtemp[2*i]=lam[i]
-        spectrumltemp[2*i]=spectruml[i]
-        if i<n-1:
-            lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
-            spectrumltemp[2*i+1]=spectruml_interp(lamtemp[2*i+1])
+    # for i in range(n):
+    #     lamtemp[2*i]=lam[i]
+    #     spectrumltemp[2*i]=spectruml[i]
+    #     if i<n-1:
+    #         lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
+    #         spectrumltemp[2*i+1]=spectruml_interp(lamtemp[2*i+1])
 
-    n=2*n-1
-    lam=lamtemp
+    # n=2*n-1
+    # lam=lamtemp
     
-    del spectruml
+    # del spectruml
     
-    spectruml=spectrumltemp
+    # spectruml=spectrumltemp
     
-    del spectrumltemp
+    # del spectrumltemp
     
     #################
 
@@ -107,7 +107,7 @@ def pulse_profile():
 
     pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
     
-    Itmp=abs(pulse)
+    It=abs(pulse)
 
     fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
     plt.subplot(2,1,1)
@@ -117,26 +117,13 @@ def pulse_profile():
     ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
 
     plt.subplot(2,1,2)
-    line2,=ax2.plot(t*1e15,Itmp)
+    line2,=ax2.plot(t*1e15,It)
     ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
     ax2.set_ylabel('Amplitude', fontsize=16)
     ax2.set_xlim([-200,200])
 
     plt.show()
     #fig.savefig("10fstotime.pdf",bbox_inches='tight')
-
-    It=np.zeros(n)
-
-#     j=1
-#     for i in range(n):
-# 	    if Itmp[i]>=0.005*max(Itmp):
-# 		    It[j]=Itmp[i]
-# 		    j+=1
-# 		
-#     It=np.trim_zeros(It)
-#     t=t[:len(It)]
-    
-    Itfinal=Itmp
 
     # plt.plot(t*1e15,Itfinal,lw=1)
     # plt.xlabel(r'Time $t\ fs$', fontsize=16)
@@ -145,12 +132,9 @@ def pulse_profile():
     # plt.xlim([-20,20])
 
     # plt.show()
-    
-    del It, Itmp
 
-    Et=np.sqrt(2*Itfinal/(c*eps0))
+    Et=np.sqrt(2*It/(c*eps0))
     Et=Et/max(Et)
-    print(len(t))
 
     return (Et,t)
 
@@ -189,19 +173,6 @@ ax3.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
 ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
 ax3.set_xlim([-300,300])
 
-# adjust the main plot to make room for the sliders
-fig.subplots_adjust(left=0.4, bottom=0.4)
-
-# Make a horizontal slider to control the frequency.
-axt=fig.add_axes([0.25, 0, 0.65, 0.03])
-alpha_slider=Slider(
-    ax=axt,
-    label='Chirp',
-    valmin=init_alpha,
-    valmax=1e30,
-    valinit=init_alpha,
-)
-
 plt.show()
 #fig.savefig("chirp.pdf",bbox_inches='tight')
 
@@ -210,26 +181,6 @@ plt.xlabel(r'Time $t\ fs$', fontsize=16)
 plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
 plt.title(r'Autocorrelation trace (nonlinear detector)', fontsize=16, color='r')
 plt.xlim([-200,200])
-
-plt.show()
-
-# The function to be called anytime a slider's value changes
-def update(val):
-    line1.set_ydata(E(t,alpha_slider.val,E0))
-    line2.set_ydata(S_q(t,alpha_slider.val,E0))
-    line3.set_ydata(S_q(t,alpha_slider.val,E0))
-    fig.canvas.draw_idle()
-
-# register the update function with each slider
-alpha_slider.on_changed(update)
-
-# Create a `matplotlib.widgets.Button` to reset the sliders to initial values
-resetax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
-button = Button(resetax, 'Reset', hovercolor='0.975')
-
-def reset(event):
-    time_slider.reset()
-button.on_clicked(reset)
 
 plt.show()
 
