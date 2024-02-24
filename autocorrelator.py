@@ -15,25 +15,31 @@ w=k*vp
 FWHM=8e-15
 sigmat=FWHM/(2*np.sqrt(2*np.log(2)))
 E00=np.sqrt(2*1e14/(c*eps0))
+alpha=2e28
 
 def E(t,alpha,E0):
     Ef=np.zeros(len(t))
     for j in range(len(t)):
-        Ef[j]=E00*E0[j]*np.cos((w+alpha*t[j])*t[j])
+        Ef[j]=E00*np.exp(-((t[j])/(2*sigmat))**2)*np.cos((w+alpha*t[j])*t[j])
+        #Ef[j]=E00*E0[j]*np.cos((w+alpha*t[j])*t[j])
         j+=1
     return Ef
 
-def S_l(t,alpha,E0):
-    S=np.zeros(len(t))
-    S=2*np.trapz((E(t,alpha,E0))**2,t)
-    S+=2*np.convolve(E(t,alpha,E0),E(t,alpha,E0),mode='same')
-    return S
+# def S_l(t,alpha,E0):
+#     S=np.zeros(len(t))
+#     S=2*np.trapz((E(t,alpha,E0))**2,t)
+#     S+=2*np.convolve(E(t,alpha,E0),E(t,alpha,E0),mode='same')
+#     return S
 
 def S_q(t,alpha,E0):
     S=np.zeros(len(t))
-    S=2*np.trapz((E(t,alpha,E0))**4,t)
-    S+=8*np.convolve((E(t,alpha,E0))**3,E(t,alpha,E0),mode='same')
-    S+=6*np.convolve((E(t,alpha,E0))**2,(E(t,alpha,E0))**2,mode='same')
+    # S=2*np.trapz((E(t,alpha,E0))**4,t)
+    # S+=8*np.convolve((E(t,alpha,E0))**3,E(t,alpha,E0),mode='same')
+    # S+=6*np.convolve((E(t,alpha,E0))**2,(E(t,alpha,E0))**2,mode='same')
+    j=0
+    for tau in t:
+	    S[j]=np.trapz((E(t,alpha,E0)+E(t+tau,alpha,E0))**4,t)
+	    j+=1
     return S
 
 def pulse_profile():
@@ -64,7 +70,7 @@ def pulse_profile():
     Iltest1=np.exp(-((lam-756e-9)/(2*10e-9))**2) # Single Gaussian
     Iltest2=np.exp(-((lam-756e-9)/(2*8e-9))**2)+0.6*np.exp(-((lam-813e-9)/(2*20e-9))**2) # Double Gaussian
 
-    spectruml=Ilir
+    spectruml=Iltest1
     
     ######## Interpolating section
 
@@ -120,7 +126,7 @@ def pulse_profile():
     line2,=ax2.plot(t*1e15,It)
     ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
     ax2.set_ylabel('Amplitude', fontsize=16)
-    ax2.set_xlim([-200,200])
+    ax2.set_xlim([-100,100])
 
     plt.show()
     #fig.savefig("10fstotime.pdf",bbox_inches='tight')
@@ -143,13 +149,11 @@ def pulse_profile():
 ##################################################################################################################
 ############################################################################################### Slider
 
-init_alpha=0
-
 E0,t=pulse_profile()
 
-Efield=E(t,init_alpha,E0)
-Slin=S_l(t,init_alpha,E0)
-Squad=S_q(t,init_alpha,E0)
+Efield=E(t,alpha,E0)
+#Slin=S_l(t,alpha,E0)
+Squad=S_q(t,alpha,E0)
 
 # Create the figure and the line that we will manipulate
 #fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
@@ -159,7 +163,7 @@ line1,=ax1.plot(t*1e15,Efield,lw=1)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel('$E\ V/m$', fontsize=16)
 ax1.set_title(r'Electric field', fontsize=16, color='r')
-ax1.set_xlim([-300,300])
+ax1.set_xlim([-100,100])
 
 # line2,=ax2.plot(t*1e15,Slin,lw=1)
 # ax2.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
@@ -171,7 +175,7 @@ line3,=ax3.plot(t*1e15 ,Squad,lw=1)
 ax3.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
 ax3.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
 ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
-ax3.set_xlim([-300,300])
+ax3.set_xlim([-100,100])
 
 plt.show()
 #fig.savefig("chirp.pdf",bbox_inches='tight')
@@ -180,7 +184,7 @@ plt.plot(t*1e15,Squad,lw=1)
 plt.xlabel(r'Time $t\ fs$', fontsize=16)
 plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
 plt.title(r'Autocorrelation trace (nonlinear detector)', fontsize=16, color='r')
-plt.xlim([-200,200])
+plt.xlim([-100,100])
 
 plt.show()
 
@@ -197,3 +201,4 @@ plt.show()
 # Add w+alpha*t discussion to justify why this was not an issue for Sam
 # Add title on slide(s?) 17 of 25
 # IMPORTANT: Ask Herman how does time axis re-scale in this process
+# Check minimum value in autocorrelation trace and effect of chirp (doesn't work as it should)
