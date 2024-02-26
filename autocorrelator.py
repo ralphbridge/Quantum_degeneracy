@@ -4,24 +4,25 @@ from matplotlib.widgets import Slider, Button
 import pandas as pd
 from scipy.interpolate import interp1d
 
-global lam,E0,sigma,eps0,c,sigmat,E00
+global lam,sigma,eps0,c,sigmat,E00
 
 eps0=8.85e-12
 c=3e8 # group velocity
-vp=c # phase velocity
+vp=0.6*c # phase velocity
 lam=800e-9 # laser frequency
 k=2*np.pi/lam
 w=k*vp
 FWHM=8e-15
 sigmat=FWHM/(2*np.sqrt(2*np.log(2)))
 E00=np.sqrt(2*1e14/(c*eps0))
-alpha=2e28
+alpha=5e28
+#alpha=0
 
 def E(t,alpha,E0):
     Ef=np.zeros(len(t))
     for j in range(len(t)):
         Ef[j]=E00*np.exp(-((t[j])/(2*sigmat))**2)*np.cos((w+alpha*t[j])*t[j])
-        #Ef[j]=E00*E0[j]*np.cos((w+alpha*t[j])*t[j])
+        #Ef[j]=E0[j]*np.cos((w+alpha*t[j])*t[j])
         j+=1
     return Ef
 
@@ -33,13 +34,14 @@ def E(t,alpha,E0):
 
 def S_q(t,alpha,E0):
     S=np.zeros(len(t))
-    # S=2*np.trapz((E(t,alpha,E0))**4,t)
-    # S+=8*np.convolve((E(t,alpha,E0))**3,E(t,alpha,E0),mode='same')
-    # S+=6*np.convolve((E(t,alpha,E0))**2,(E(t,alpha,E0))**2,mode='same')
-    j=0
-    for tau in t:
-	    S[j]=np.trapz((E(t,alpha,E0)+E(t+tau,alpha,E0))**4,t)
-	    j+=1
+    S=2*np.trapz((E(t,alpha,E0))**4,t)
+    S+=4*np.convolve((E(t,alpha,E0))**3,E(t,alpha,E0),mode='same')*(max(t)-min(t))/len(t)
+    S+=4*np.convolve(E(t,alpha,E0),(E(t,alpha,E0))**3,mode='same')*(max(t)-min(t))/len(t)
+    S+=6*np.convolve((E(t,alpha,E0))**2,(E(t,alpha,E0))**2,mode='same')*(max(t)-min(t))/len(t)
+#     j=0
+#     for tau in t:
+# 	    S[j]=np.trapz((E(t,alpha,E0)+E(t+tau,alpha,E0))**4,t)
+# 	    j+=1
     return S
 
 def pulse_profile():
@@ -140,7 +142,7 @@ def pulse_profile():
     # plt.show()
 
     Et=np.sqrt(2*It/(c*eps0))
-    Et=Et/max(Et)
+    Et=E00*Et/max(Et)
 
     return (Et,t)
 
@@ -201,4 +203,4 @@ plt.show()
 # Add w+alpha*t discussion to justify why this was not an issue for Sam
 # Add title on slide(s?) 17 of 25
 # IMPORTANT: Ask Herman how does time axis re-scale in this process
-# Check minimum value in autocorrelation trace and effect of chirp (doesn't work as it should)
+# Check effect of chirp (doesn't work as it should)
