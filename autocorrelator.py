@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Button
 import pandas as pd
 from scipy.interpolate import interp1d
 
@@ -8,22 +7,23 @@ global lam,sigma,eps0,c,sigmat,E00
 
 eps0=8.85e-12
 c=3e8 # group velocity
-vp=0.6*c # phase velocity
-lam=800e-9 # laser frequency
-k=2*np.pi/lam
+vp=c # phase velocity
+lamlaser=800e-9 # laser frequency
+k=2*np.pi/lamlaser
 w=k*vp
 FWHM=8e-15
 sigmat=FWHM/(2*np.sqrt(2*np.log(2)))
 E00=np.sqrt(2*1e14/(c*eps0))
-alpha=5e28
-#alpha=0
+#alpha=0.3e27
+alpha=0
 
-def E(t,alpha,E0):
-    Ef=np.zeros(len(t))
-    for j in range(len(t)):
-        Ef[j]=E00*np.exp(-((t[j])/(2*sigmat))**2)*np.cos((w+alpha*t[j])*t[j])
-        #Ef[j]=E0[j]*np.cos((w+alpha*t[j])*t[j])
-        j+=1
+def E0shift(E0,j):
+    Ef=np.zeros(len(E0))
+    Eftemp=np.append(np.append(E0,E0),E0)
+    for i in range(len(E0)):
+        idx=int((len(E0)-1)/2)+i+j
+        Ef[i]=Eftemp[idx]
+    del Eftemp
     return Ef
 
 # def S_l(t,alpha,E0):
@@ -34,14 +34,10 @@ def E(t,alpha,E0):
 
 def S_q(t,alpha,E0):
     S=np.zeros(len(t))
-    S=2*np.trapz((E(t,alpha,E0))**4,t)
-    S+=4*np.convolve((E(t,alpha,E0))**3,E(t,alpha,E0),mode='same')*(max(t)-min(t))/len(t)
-    S+=4*np.convolve(E(t,alpha,E0),(E(t,alpha,E0))**3,mode='same')*(max(t)-min(t))/len(t)
-    S+=6*np.convolve((E(t,alpha,E0))**2,(E(t,alpha,E0))**2,mode='same')*(max(t)-min(t))/len(t)
-#     j=0
-#     for tau in t:
-# 	    S[j]=np.trapz((E(t,alpha,E0)+E(t+tau,alpha,E0))**4,t)
-# 	    j+=1
+    j=0
+    for tau in t:            
+        S[j]=np.trapz((E0+E0shift(E0,j))**4,t)
+        j+=1
     return S
 
 def pulse_profile():
@@ -70,32 +66,35 @@ def pulse_profile():
     Ilir=(Ilir-min(Ilir))/max(Ilir)
     
     Iltest1=np.exp(-((lam-756e-9)/(2*10e-9))**2) # Single Gaussian
-    Iltest2=np.exp(-((lam-756e-9)/(2*8e-9))**2)+0.6*np.exp(-((lam-813e-9)/(2*20e-9))**2) # Double Gaussian
+    Iltest2=0.925*np.exp(-((lam-756e-9)/(2*8e-9))**2)+0.5*np.exp(-((lam-813e-9)/(2*20e-9))**2) # Double Gaussian
 
-    spectruml=Iltest1
+    spectruml=Il
     
     ######## Interpolating section
+    
+    nint=0 # Number of interpolated iterations: N added points between experimental points is N=2^n-1
 
-    # lamtemp=np.zeros(2*n-1)
-    # spectrumltemp=np.zeros(2*n-1)
+    for i in range(nint):
+        lamtemp=np.zeros(2*n-1)
+        spectrumltemp=np.zeros(2*n-1)
     
-    # spectruml_interp=interp1d(lam,spectruml)
+        spectruml_interp=interp1d(lam,spectruml)
 
-    # for i in range(n):
-    #     lamtemp[2*i]=lam[i]
-    #     spectrumltemp[2*i]=spectruml[i]
-    #     if i<n-1:
-    #         lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
-    #         spectrumltemp[2*i+1]=spectruml_interp(lamtemp[2*i+1])
+        for i in range(n):
+            lamtemp[2*i]=lam[i]
+            spectrumltemp[2*i]=spectruml[i]
+            if i<n-1:
+                lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
+                spectrumltemp[2*i+1]=spectruml_interp(lamtemp[2*i+1])
 
-    # n=2*n-1
-    # lam=lamtemp
+        n=2*n-1
+        lam=lamtemp
     
-    # del spectruml
+        del spectruml, spectruml_interp
     
-    # spectruml=spectrumltemp
+        spectruml=spectrumltemp
     
-    # del spectrumltemp
+        del spectrumltemp
     
     #################
 
@@ -108,10 +107,6 @@ def pulse_profile():
 
     df=(max(f)-min(f))/n
     t=np.arange(-n/2,n/2)/(n*df)
-
-    # for i in range(n): # I use this section to "clean up" the measured spectrum in lambda
-    #     if spectrum[i]<=0.5*max(spectrum):
-    #         spectrum[i]=0
 
     pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
     
@@ -133,29 +128,19 @@ def pulse_profile():
     plt.show()
     #fig.savefig("10fstotime.pdf",bbox_inches='tight')
 
-    # plt.plot(t*1e15,Itfinal,lw=1)
-    # plt.xlabel(r'Time $t\ fs$', fontsize=16)
-    # plt.ylabel(r'Intensity $I(t)\ J/m^2$', fontsize=16)
-    # plt.title(r'Intensity profile as function of time', fontsize=16, color='r')
-    # plt.xlim([-20,20])
-
-    # plt.show()
-
     Et=np.sqrt(2*It/(c*eps0))
     Et=E00*Et/max(Et)
 
-    return (Et,t)
-
-    #fig.savefig("100fsuvtotime_nbg.pdf",bbox_inches='tight')
+    return (lam,spectruml,Et,t)
 
 ##################################################################################################################
 ############################################################################################### Slider
 
-E0,t=pulse_profile()
+lam,spectruml,E0,t=pulse_profile()
 
-Efield=E(t,alpha,E0)
+Efield=np.multiply(E0,np.cos((w+alpha*t)*t))
 #Slin=S_l(t,alpha,E0)
-Squad=S_q(t,alpha,E0)
+Squad=S_q(t,alpha,Efield)
 
 # Create the figure and the line that we will manipulate
 #fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
@@ -194,13 +179,10 @@ plt.show()
 ##################################################################################################################
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
-# Start at a transform limit pulse (assume the pulse is good from the laser)
 # Check if number of fringes is consistent with tau=8fs
 # Get theoretical expression for Fourier transform (for simple Gaussian spectrum)
-# Use matlab fit function to get sine and cosine expressions(?)
-# Check convergence for larger n and for larger t ranges
+# Check convergence for larger n and for larger t ranges(?)
 # Change Intensity vs frequency for Intensity vs lambda in slides 16 out of 25
 # Add w+alpha*t discussion to justify why this was not an issue for Sam
 # Add title on slide(s?) 17 of 25
 # IMPORTANT: Ask Herman how does time axis re-scale in this process
-# Check effect of chirp (doesn't work as it should)
