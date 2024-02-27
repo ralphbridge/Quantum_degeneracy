@@ -7,7 +7,7 @@ global lam,sigma,eps0,c,sigmat,E00
 
 eps0=8.85e-12
 c=3e8 # group velocity
-vp=c # phase velocity
+vp=0.3*c # phase velocity
 lamlaser=800e-9 # laser frequency
 k=2*np.pi/lamlaser
 w=k*vp
@@ -104,9 +104,43 @@ def pulse_profile():
     for i in range(n):
         f[n-i-1]=c/(lam[i])
         spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
+    
+    ######## Creating equally spaced frequency domain and spectrum
+    
+    # ftemp=np.linspace(min(f),max(f),n)
+    # spectrumtemp=np.zeros(n)
+    
+    # spectrum_interp=interp1d(f,spectrum)
+    
+    # for i in range(n):
+    #     spectrumtemp[i]=spectrum_interp(ftemp[i])
+    
+    # fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+    # plt.subplot(2,1,1)
+    # line1,=ax1.plot(f*1e-15,spectrum)
+    # ax1.set_xlabel(r'Frequency $f\ GHz$', fontsize=16)
+    # ax1.set_ylabel('Frequency spectrum', fontsize=16)
+    # ax1.set_xlim([min(f)*1e-15,0.3*max(f)*1e-15])
 
-    df=(max(f)-min(f))/n
+    # plt.subplot(2,1,2)
+    # line2,=ax2.plot(ftemp*1e-15,spectrumtemp)
+    # ax2.set_xlabel(r'Interpolated frequency $f_{interp}\ GHz$', fontsize=16)
+    # ax2.set_ylabel('Interpolated frequency spectrum', fontsize=16)
+    # ax2.set_xlim([min(ftemp)*1e-15,0.3*max(ftemp)*1e-15])
+    
+    # f=ftemp
+    # spectrum=spectrumtemp
+    
+    # del ftemp, spectrumtemp
+    
+    # df=f[1]-f[0]
+    
+    ###########
+    
+    df=(max(f)-min(f))/(n-1)
+    
     t=np.arange(-n/2,n/2)/(n*df)
+    #t=range(n)/(n*df)
 
     pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
     
@@ -131,12 +165,9 @@ def pulse_profile():
     Et=np.sqrt(2*It/(c*eps0))
     Et=E00*Et/max(Et)
 
-    return (lam,spectruml,Et,t)
+    return (lam,spectruml,f,spectrum,Et,t)
 
-##################################################################################################################
-############################################################################################### Slider
-
-lam,spectruml,E0,t=pulse_profile()
+lam,spectruml,f,spectrum,E0,t=pulse_profile()
 
 Efield=np.multiply(E0,np.cos((w+alpha*t)*t))
 #Slin=S_l(t,alpha,E0)
@@ -174,9 +205,6 @@ plt.title(r'Autocorrelation trace (nonlinear detector)', fontsize=16, color='r')
 plt.xlim([-100,100])
 
 plt.show()
-
-############################################################################################### End of slider
-##################################################################################################################
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
 # Check if number of fringes is consistent with tau=8fs
