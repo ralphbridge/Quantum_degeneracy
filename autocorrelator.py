@@ -171,6 +171,10 @@ def pulse_profile():
 lam,spectruml,f,spectrum,E0,t=pulse_profile()
 
 Efield=np.multiply(E0,np.cos((w+alpha*t)*t))
+#n=10000
+#tt=np.linspace(min(t),max(t),n)
+#t=tt
+#Efield=E00*np.exp(-(t/(2*2.1*sigmat))**2)*np.cos((w+alpha*t)*t)
 #Slin=S_l(t,alpha,E0)
 Squad=S_q(t,alpha,Efield)
 
