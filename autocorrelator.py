@@ -7,14 +7,15 @@ global lam,sigma,eps0,c,sigmat,E00
 
 eps0=8.85e-12
 c=3e8 # group velocity
-vp=0.3*c # phase velocity
-lamlaser=800e-9 # laser frequency
+#vp=c # phase velocity
+lamlaser=756e-9 # laser frequency
 k=2*np.pi/lamlaser
-w=k*vp
+#w=k*vp
+w=2*np.pi*c/lamlaser
 FWHM=8e-15
 sigmat=FWHM/(2*np.sqrt(2*np.log(2)))
 E00=np.sqrt(2*1e14/(c*eps0))
-#alpha=0.3e27
+# alpha=1e28 # complex part of the beam parameter Gamma
 alpha=0
 
 def E0shift(E0,j):
@@ -66,7 +67,7 @@ def pulse_profile():
     Ilir=(Ilir-min(Ilir))/max(Ilir)
     
     Iltest1=np.exp(-((lam-756e-9)/(2*10e-9))**2) # Single Gaussian
-    Iltest2=0.925*np.exp(-((lam-756e-9)/(2*8e-9))**2)+0.5*np.exp(-((lam-813e-9)/(2*20e-9))**2) # Double Gaussian
+    Iltest2=np.exp(-((lam-756e-9)/(2*10e-9))**2)+0.65*np.exp(-((lam-815e-9)/(2*15e-9))**2) # Double Gaussian
 
     spectruml=Il
     
@@ -160,7 +161,7 @@ def pulse_profile():
     ax2.set_xlim([-100,100])
 
     plt.show()
-    #fig.savefig("10fstotime.pdf",bbox_inches='tight')
+    fig.savefig("10fs.pdf",bbox_inches='tight')
 
     Et=np.sqrt(2*It/(c*eps0))
     Et=E00*Et/max(Et)
@@ -196,21 +197,18 @@ ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
 ax3.set_xlim([-100,100])
 
 plt.show()
-#fig.savefig("chirp.pdf",bbox_inches='tight')
+# fig.savefig("twogaussians_nochirp.pdf",bbox_inches='tight')
 
+fig = plt.figure()
 plt.plot(t*1e15,Squad,lw=1)
 plt.xlabel(r'Time $t\ fs$', fontsize=16)
 plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
-plt.title(r'Autocorrelation trace (nonlinear detector)', fontsize=16, color='r')
 plt.xlim([-100,100])
 
 plt.show()
+fig.savefig("10fstrace_nochirp.pdf",bbox_inches='tight')
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
 # Check if number of fringes is consistent with tau=8fs
 # Get theoretical expression for Fourier transform (for simple Gaussian spectrum)
-# Check convergence for larger n and for larger t ranges(?)
-# Change Intensity vs frequency for Intensity vs lambda in slides 16 out of 25
 # Add w+alpha*t discussion to justify why this was not an issue for Sam
-# Add title on slide(s?) 17 of 25
-# IMPORTANT: Ask Herman how does time axis re-scale in this process
