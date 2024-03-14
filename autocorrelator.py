@@ -72,12 +72,12 @@ Il=(Il-min(Il))/max(Il)
 Iluv=(Iluv-min(Iluv))/max(Iluv)
 Ilir=(Ilir-min(Ilir))/max(Ilir)
 
-Iltest1=np.exp(-((lam-756e-9)/(2*10e-9))**2) # Single Gaussian
-Iltest2=np.exp(-((lam-756e-9)/(2*10e-9))**2)+0.65*np.exp(-((lam-815e-9)/(2*15e-9))**2) # Double Gaussian
+Iltest1=np.exp(-((lam-756e-9)/(2*20e-9))**2) # Single Gaussian
+Iltest2=np.exp(-((lam-756e-9)/(2*20e-9))**2)+0.65*np.exp(-((lam-815e-9)/(2*15e-9))**2) # Double Gaussian
 
-spectruml=Iltest2
+spectruml=Il
 
-######## Interpolating section
+######## Interpolating section in wavelength
 
 # nint=0 # Number of interpolated iterations: N added points between experimental points is N=2^n-1
 
@@ -110,13 +110,33 @@ for i in range(n):
 
 ######## Creating equally spaced frequency domain and spectrum
 
-# ftemp=np.linspace(min(f),max(f),n)
-# spectrumtemp=np.zeros(n)
+dfmax=0
+df=(max(f)-min(f))/n
+dfmin=df
 
-# spectrum_interp=interp1d(f,spectrum)
+# print("{:.3e}".format(dfmin))
 
-# for i in range(n):
-#     spectrumtemp[i]=spectrum_interp(ftemp[i])
+for i in range(n-1):
+    if f[i+1]-f[i]>dfmax:
+        dfmax=f[i+1]-f[i]
+    elif f[i+1]-f[i]<dfmin:
+        dfmin=f[i+1]-f[i]
+
+# print("{:.3e}".format(dfmin))
+# print("{:.3e}".format(dfmax))
+
+df=dfmax
+
+ftemp=np.arange(min(f),max(f),df)
+
+n=len(ftemp)
+spectrumtemp=np.zeros(n)
+
+spectrum_interp=interp1d(f,spectrum)
+#spectrum_interp=UnivariateSpline(f,spectrum)
+
+for i in range(n):
+    spectrumtemp[i]=spectrum_interp(ftemp[i])
 
 # fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 # plt.subplot(2,1,1)
@@ -131,16 +151,25 @@ for i in range(n):
 # ax2.set_ylabel('Interpolated frequency spectrum', fontsize=16)
 # ax2.set_xlim([min(ftemp)*1e-15,0.3*max(ftemp)*1e-15])
 
-# f=ftemp
-# spectrum=spectrumtemp
+f=ftemp
+spectrum=spectrumtemp
 
-# del ftemp, spectrumtemp
+del ftemp, spectrumtemp
 
-# df=f[1]-f[0]
+########### Increasing time resolution (by increasing frequency range) by 3^N
+
+N=1
+
+for i in range(N):
+    f=np.append(np.append(np.arange(min(f)-n*df,min(f),df),f),np.arange(max(f)+df,max(f)+(n+1)*df,df))
+    spectrum=np.append(np.append(np.zeros(n),spectrum),np.zeros(n))
+    n=len(f)
 
 ###########
 
-df=(max(f)-min(f))/(n-1)
+# df=(max(f)-min(f))/(n-1)
+
+# spectrum=np.exp(-((f-4e14)/(2*1e13))**2)
 
 t=np.arange(-n/2,n/2)/(n*df)
 #t=range(n)/(n*df)
@@ -149,21 +178,43 @@ pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
 
 It=abs(pulse)
 
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-plt.subplot(2,1,1)
-line1,=ax1.plot(lam*1e9,spectruml)
-ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
-ax1.set_ylabel('Amplitude', fontsize=16)
-ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
+# fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+# plt.subplot(2,1,1)
+# line1,=ax1.plot(lam*1e9,spectruml)
+# ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
+# ax1.set_ylabel('Amplitude', fontsize=16)
+# ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
 
-plt.subplot(2,1,2)
+# plt.subplot(2,1,2)
+# line2,=ax2.plot(t*1e15,It)
+# ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
+# ax2.set_ylabel('Amplitude', fontsize=16)
+# ax2.set_xlim([-100,100])
+
+# plt.show()
+# fig.savefig("10fs.pdf",bbox_inches='tight')
+
+fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
+plt.subplot(3,1,1)
+line1,=ax1.plot(f,spectrum)
+ax1.set_xlabel(r'Frequency $f\ Hz$', fontsize=16)
+ax1.set_ylabel('Amplitude in f', fontsize=16)
+# ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
+
+plt.subplot(3,1,2)
 line2,=ax2.plot(t*1e15,It)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('Amplitude', fontsize=16)
-ax2.set_xlim([-100,100])
+ax2.set_ylabel('Amplitude in t', fontsize=16)
+#ax2.set_xlim([-100,100])
+
+plt.subplot(3,1,3)
+line3,=ax3.plot(t*1e15,It)
+# ax3.stem(t*1e15,It)
+ax3.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax3.set_ylabel('Amplitude in t', fontsize=16)
+ax3.set_xlim([-100,100])
 
 plt.show()
-fig.savefig("10fs.pdf",bbox_inches='tight')
 
 E0=np.sqrt(2*It/(c*eps0))
 E0=E00*E0/max(E0)
@@ -212,9 +263,9 @@ plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
 plt.xlim([-100,100])
 
 plt.show()
-fig.savefig("10fstrace_nochirp.pdf",bbox_inches='tight')
+# fig.savefig("10fstrace_nochirp.pdf",bbox_inches='tight')
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
 # Check if number of fringes is consistent with tau=8fs
 # Get theoretical expression for Fourier transform (for simple Gaussian spectrum)
-# Add w+alpha*t discussion to justify why this was not an issue for Sam
+# Change model for chirp using Agrawal and map its parameters to exp GDD
