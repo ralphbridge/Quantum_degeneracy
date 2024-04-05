@@ -3,20 +3,22 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.interpolate import interp1d
 
-global lam,sigma,eps0,c,sigmat,E00
-
 eps0=8.85e-12
-c=3e8 # group velocity
+c=3e8
 #vp=c # phase velocity
-lamlaser=756e-9 # laser frequency
+lamlaser=756e-9 # laser central wavelength
 k=2*np.pi/lamlaser
 #w=k*vp
 w=2*np.pi*c/lamlaser
 FWHM=8e-15
-sigmat=FWHM/(2*np.sqrt(2*np.log(2)))
+# T0=FWHM/(2*np.sqrt(2*np.log(2)))
+T0=FWHM
 E00=np.sqrt(2*1e14/(c*eps0))
+
+# gdd=10e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
+gdd=0
 # alpha=1e28 # complex part of the beam parameter Gamma
-alpha=0
+alpha=w*gdd/T0**3
 
 def E0shift(E0,j):
     Ef=np.zeros(len(E0))
@@ -40,11 +42,6 @@ def S_q(t,alpha,E0):
         S[j]=np.trapz((E0+E0shift(E0,j))**4,t)
         j+=1
     return S
-
-# def pulse_profile():
-    
-
-#     return (lam,spectruml,f,spectrum,Et,t)
 
 ###############
 
@@ -73,33 +70,9 @@ Iluv=(Iluv-min(Iluv))/max(Iluv)
 Ilir=(Ilir-min(Ilir))/max(Ilir)
 
 Iltest1=np.exp(-((lam-756e-9)/(2*20e-9))**2) # Single Gaussian
-Iltest2=np.exp(-((lam-756e-9)/(2*20e-9))**2)+0.65*np.exp(-((lam-815e-9)/(2*15e-9))**2) # Double Gaussian
+Iltest2=np.exp(-((lam-756e-9)/(2*10e-9))**2)+0.75*np.exp(-((lam-800e-9)/(2*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(2*15e-9))**2) # Double Gaussian
 
-spectruml=Il
-
-######## Interpolating section in wavelength
-
-# nint=0 # Number of interpolated iterations: N added points between experimental points is N=2^n-1
-
-# for i in range(nint):
-#     lamtemp=np.zeros(2*n-1)
-#     spectrumltemp=np.zeros(2*n-1)
-#     spectruml_interp=interp1d(lam,spectruml)
-
-#     for i in range(n):
-#         lamtemp[2*i]=lam[i]
-#         spectrumltemp[2*i]=spectruml[i]
-#         if i<n-1:
-#             lamtemp[2*i+1]=(lam[i+1]+lam[i])/2
-#             spectrumltemp[2*i+1]=spectruml_interp(lamtemp[2*i+1])
-
-#     n=2*n-1
-#     lam=lamtemp
-#     del spectruml, spectruml_interp
-#     spectruml=spectrumltemp
-#     del spectrumltemp
-
-#################
+spectruml=Iltest2
 
 f=np.zeros(n)
 spectrum=np.zeros(n)
@@ -108,131 +81,84 @@ for i in range(n):
     f[n-i-1]=c/(lam[i])
     spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
 
+df=(max(f)-min(f))/n
+
 ######## Creating equally spaced frequency domain and spectrum
 
-dfmax=0
-df=(max(f)-min(f))/n
-dfmin=df
+# dfmax=0
+# dfmin=df
 
-# print("{:.3e}".format(dfmin))
+# for i in range(n-1):
+#     if f[i+1]-f[i]>dfmax:
+#         dfmax=f[i+1]-f[i]
+#     elif f[i+1]-f[i]<dfmin:
+#         dfmin=f[i+1]-f[i]
 
-for i in range(n-1):
-    if f[i+1]-f[i]>dfmax:
-        dfmax=f[i+1]-f[i]
-    elif f[i+1]-f[i]<dfmin:
-        dfmin=f[i+1]-f[i]
+# df=dfmax
 
-# print("{:.3e}".format(dfmin))
-# print("{:.3e}".format(dfmax))
+# ftemp=np.arange(min(f),max(f),df)
 
-df=dfmax
+# n=len(ftemp)
+# spectrumtemp=np.zeros(n)
 
-ftemp=np.arange(min(f),max(f),df)
+# spectrum_interp=interp1d(f,spectrum)
+# #spectrum_interp=UnivariateSpline(f,spectrum)
 
-n=len(ftemp)
-spectrumtemp=np.zeros(n)
+# for i in range(n):
+#     spectrumtemp[i]=spectrum_interp(ftemp[i])
 
-spectrum_interp=interp1d(f,spectrum)
-#spectrum_interp=UnivariateSpline(f,spectrum)
+# f=ftemp
+# spectrum=spectrumtemp
 
-for i in range(n):
-    spectrumtemp[i]=spectrum_interp(ftemp[i])
-
-# fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-# plt.subplot(2,1,1)
-# line1,=ax1.plot(f*1e-15,spectrum)
-# ax1.set_xlabel(r'Frequency $f\ GHz$', fontsize=16)
-# ax1.set_ylabel('Frequency spectrum', fontsize=16)
-# ax1.set_xlim([min(f)*1e-15,0.3*max(f)*1e-15])
-
-# plt.subplot(2,1,2)
-# line2,=ax2.plot(ftemp*1e-15,spectrumtemp)
-# ax2.set_xlabel(r'Interpolated frequency $f_{interp}\ GHz$', fontsize=16)
-# ax2.set_ylabel('Interpolated frequency spectrum', fontsize=16)
-# ax2.set_xlim([min(ftemp)*1e-15,0.3*max(ftemp)*1e-15])
-
-f=ftemp
-spectrum=spectrumtemp
-
-del ftemp, spectrumtemp
+# del ftemp, spectrumtemp
 
 ########### Increasing time resolution (by increasing frequency range) by 3^N
 
-N=1
+# N=1
 
-for i in range(N):
-    f=np.append(np.append(np.arange(min(f)-n*df,min(f),df),f),np.arange(max(f)+df,max(f)+(n+1)*df,df))
-    spectrum=np.append(np.append(np.zeros(n),spectrum),np.zeros(n))
-    n=len(f)
+# for i in range(N):
+#     f=np.append(np.append(np.arange(min(f)-n*df,min(f),df),f),np.arange(max(f)+df,max(f)+(n+1)*df,df))
+#     spectrum=np.append(np.append(np.zeros(n),spectrum),np.zeros(n))
+#     n=len(f)
 
 ###########
 
-# df=(max(f)-min(f))/(n-1)
-
-# spectrum=np.exp(-((f-4e14)/(2*1e13))**2)
-
 t=np.arange(-n/2,n/2)/(n*df)
-#t=range(n)/(n*df)
 
 pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
 
 It=abs(pulse)
 
-# fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-# plt.subplot(2,1,1)
-# line1,=ax1.plot(lam*1e9,spectruml)
-# ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
-# ax1.set_ylabel('Amplitude', fontsize=16)
-# ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
+fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+plt.subplot(2,1,1)
+line1,=ax1.plot(lam*1e9,spectruml)
+ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
+ax1.set_ylabel('Amplitude', fontsize=16)
+ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
 
-# plt.subplot(2,1,2)
-# line2,=ax2.plot(t*1e15,It)
-# ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-# ax2.set_ylabel('Amplitude', fontsize=16)
-# ax2.set_xlim([-100,100])
-
-# plt.show()
-# fig.savefig("10fs.pdf",bbox_inches='tight')
-
-fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
-plt.subplot(3,1,1)
-line1,=ax1.plot(f,spectrum)
-ax1.set_xlabel(r'Frequency $f\ Hz$', fontsize=16)
-ax1.set_ylabel('Amplitude in f', fontsize=16)
-# ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
-
-plt.subplot(3,1,2)
+plt.subplot(2,1,2)
 line2,=ax2.plot(t*1e15,It)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('Amplitude in t', fontsize=16)
-#ax2.set_xlim([-100,100])
-
-plt.subplot(3,1,3)
-line3,=ax3.plot(t*1e15,It)
-# ax3.stem(t*1e15,It)
-ax3.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax3.set_ylabel('Amplitude in t', fontsize=16)
-ax3.set_xlim([-100,100])
+ax2.set_ylabel('Amplitude', fontsize=16)
+ax2.set_xlim([-100,100])
 
 plt.show()
 
-E0=np.sqrt(2*It/(c*eps0))
+E0=np.sqrt(2*It/(c*eps0)) # check this two lines
 E0=E00*E0/max(E0)
 
 ###############
 
-#lam,spectruml,f,spectrum,E0,t=pulse_profile()
-
-Efield=np.multiply(E0,np.cos((w+alpha*t)*t))
-#n=10000
-#tt=np.linspace(min(t),max(t),n)
-#t=tt
-#Efield=E00*np.exp(-(t/(2*2.1*sigmat))**2)*np.cos((w+alpha*t)*t)
+# Efield=np.multiply(E0,np.cos((w+alpha*t)*t))
+n=10000
+tt=np.linspace(min(t),max(t),n)
+t=tt
+T1=np.sqrt(1+(gdd/T0**2)**2)*T0
+Efield=(E00/(np.sqrt(2*np.pi)*T1))*np.exp(-t**2/(2*T1**2))*np.cos(w*t+alpha*t**2)
 #Slin=S_l(t,alpha,E0)
 Squad=S_q(t,alpha,Efield)
 
 # Create the figure and the line that we will manipulate
-#fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
 fig,(ax1,ax3)=plt.subplots(2,1,tight_layout=True)
 
 line1,=ax1.plot(t*1e15,Efield,lw=1)
@@ -256,13 +182,13 @@ ax3.set_xlim([-100,100])
 plt.show()
 # fig.savefig("twogaussians_nochirp.pdf",bbox_inches='tight')
 
-fig = plt.figure()
-plt.plot(t*1e15,Squad,lw=1)
-plt.xlabel(r'Time $t\ fs$', fontsize=16)
-plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
-plt.xlim([-100,100])
+# fig = plt.figure()
+# plt.plot(t*1e15,Squad,lw=1)
+# plt.xlabel(r'Time $t\ fs$', fontsize=16)
+# plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
+# plt.xlim([-100,100])
 
-plt.show()
+# plt.show()
 # fig.savefig("10fstrace_nochirp.pdf",bbox_inches='tight')
 
 # Estimate dispersion for our laser: a) due to air, b) due to optics elements
