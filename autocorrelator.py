@@ -43,6 +43,11 @@ def S_q(t,alpha,E0):
         j+=1
     return S
 
+def _3gaussian(x, p):
+    return p[0]*(1/(p[1]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[2])/p[1])**2))) + \
+            p[3]*(1/(p[4]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[5])/p[4])**2)))+ \
+            p[6]*(1/(p[7]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[8])/p[7])**2)))
+
 ###############
 
 S=pd.read_excel("spectrum.xlsx").to_numpy()
@@ -147,9 +152,37 @@ plt.show()
 E0=np.sqrt(2*It/(c*eps0)) # check this two lines
 E0=E00*E0/max(E0)
 
-###############
+############### Gaussian fit (3 Gaussian functions)
 
-# Efield=np.multiply(E0,np.cos((w+alpha*t)*t))
+pars=[max(E0),10e-15,t[E0.index(max(E0))],max(E0)/5,20e-15,t[E0.index(max(E0))]//4,max(E0)/5,20e-15,3*t[E0.index(max(E0))]//4] # Amp, sigma, center (per function) in form of list
+popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, t, E0, p0=pars)
+
+E0fit=_3gaussian(t, *popt_2gauss)
+
+fig = plt.figure(figsize=(4,3))
+gs = gridspec.GridSpec(1,1)
+ax1 = fig.add_subplot(gs[0])
+
+ax1.plot(t,E0, "ro")
+ax1.plot(t,E0fit, 'k--')#,\
+         #label="y= %0.2f$e^{%0.2fx}$ + %0.2f" % (popt_exponential[0], popt_exponential[1], popt_exponential[2]))
+    
+ax1.set_xlim([-100,100])
+ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax1.set_ylabel('Amplitude', fontsize=16)
+ax1.legend(loc="best")
+ax1.xaxis.set_major_locator(ticker.MultipleLocator(20))
+ax1.xaxis.set_minor_locator(AutoMinorLocator(2))
+ax1.yaxis.set_minor_locator(AutoMinorLocator(2))
+ax1.tick_params(axis='both',which='major', direction="out", top="on", right="on", bottom="on", length=8, labelsize=8)
+ax1.tick_params(axis='both',which='minor', direction="out", top="on", right="on", bottom="on", length=5, labelsize=8)
+
+fig.tight_layout()
+plt.show()
+
+############### 
+
+# Efield_exp=np.multiply(E0,np.cos((w+alpha*t)*t))
 n=10000
 tt=np.linspace(min(t),max(t),n)
 t=tt
