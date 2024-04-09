@@ -10,12 +10,10 @@ import matplotlib.ticker as ticker
 def _1gaussian(x, amp1,cen1,sigma1):
     return amp1*(1/(sigma1*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-cen1)/sigma1)**2)))
 
-def _3gaussian(x, p):
-    return p[0]*(1/(p[1]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[2])/p[1])**2))) + \
-            p[3]*(1/(p[4]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[5])/p[4])**2)))+ \
-            p[6]*(1/(p[7]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[8])/p[7])**2)))
-
-N=3 # Number of Gaussians to be used in the fit
+def _3gaussian(x, amp1,cen1,sigma1, amp2,cen2,sigma2, amp3,cen3,sigma3):
+    return amp1*(1/(sigma1*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-cen1)/sigma1)**2))) + \
+            amp2*(1/(sigma2*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-cen2)/sigma2)**2)))+ \
+            amp3*(1/(sigma3*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-cen3)/sigma3)**2)))
 
 # linearly spaced x-axis of 10 values between 1 and 10
 n=200
@@ -30,12 +28,7 @@ x_array = np.linspace(1,100,n)
 # y_noise_gauss = (np.exp((np.random.ranf(50))))/5
 # y_array_gauss += y_noise_gauss
 
-pars=np.zeros(3*N)
-
-pars=[100,10,40,75,5,65,10,2,15] # Amp, sigma, center (per function) in form of list
-#pars=[100,10,40,100,10,40,100,10,40] # check if same guess works
-
-""" amp1 = 100
+amp1 = 100
 sigma1 = 10
 cen1 = 40
 
@@ -45,27 +38,26 @@ cen2 = 65
 
 amp3 = 10
 sigma3 = 2
-cen3 = 15 """
+cen3 = 15
 
-y_array_2gauss = pars[0]*(1/(pars[1]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-pars[2])/pars[1])**2))) + \
-                pars[3]*(1/(pars[4]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-pars[5])/pars[4])**2))) + \
-                pars[6]*(1/(pars[7]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-pars[8])/pars[7])**2)))
+y_array_2gauss = amp1*(1/(sigma1*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-cen1)/sigma1)**2))) + \
+                amp2*(1/(sigma2*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-cen2)/sigma2)**2))) + \
+                amp3*(1/(sigma3*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-cen3)/sigma3)**2)))
 
 # creating some noise to add the the y-axis data
 y_noise_2gauss = (np.exp((np.random.ranf(n))))/5
 y_array_2gauss += y_noise_2gauss
 
-popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, x_array, y_array_2gauss, p0=pars)
+popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, x_array, y_array_2gauss, p0=[amp1, cen1, sigma1, amp2, cen2, sigma2, amp3, cen3, sigma3])
 
 perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
 
-""" pars_1 = popt_2gauss[0:3]
+pars_1 = popt_2gauss[0:3]
 pars_2 = popt_2gauss[3:6]
 pars_3 = popt_2gauss[6:9]
 gauss_peak_1 = _1gaussian(x_array, *pars_1)
 gauss_peak_2 = _1gaussian(x_array, *pars_2)
-gauss_peak_3 = _1gaussian(x_arra
-y, *pars_3) """
+gauss_peak_3 = _1gaussian(x_array, *pars_3)
 
 fig = plt.figure(figsize=(4,3))
 gs = gridspec.GridSpec(1,1)
@@ -96,7 +88,7 @@ fig.tight_layout()
 fig.savefig("fit2Gaussian.png", format="png",dpi=1000)
 
 # this cell prints the fitting parameters with their errors
-""" print("-------------Peak 1-------------")
+print("-------------Peak 1-------------")
 print("amplitude = %0.2f (+/-) %0.2f" % (pars_1[0], perr_2gauss[0]))
 print("center = %0.2f (+/-) %0.2f" % (pars_1[1], perr_2gauss[1]))
 print("sigma = %0.2f (+/-) %0.2f" % (pars_1[2], perr_2gauss[2]))
@@ -113,4 +105,4 @@ print("amplitude = %0.2f (+/-) %0.2f" % (pars_3[0], perr_2gauss[6]))
 print("center = %0.2f (+/-) %0.2f" % (pars_3[1], perr_2gauss[7]))
 print("sigma = %0.2f (+/-) %0.2f" % (pars_3[2], perr_2gauss[8]))
 print("area = %0.2f" % np.trapz(gauss_peak_3))
-print("--------------------------------") """
+print("--------------------------------")
