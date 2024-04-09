@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import scipy as scipy
 from scipy.interpolate import interp1d
+from scipy import optimize
 
 eps0=8.85e-12
 c=3e8
-#vp=c # phase velocity
 lamlaser=756e-9 # laser central wavelength
 k=2*np.pi/lamlaser
-#w=k*vp
 w=2*np.pi*c/lamlaser
 FWHM=8e-15
 # T0=FWHM/(2*np.sqrt(2*np.log(2)))
@@ -44,9 +44,9 @@ def S_q(t,alpha,E0):
     return S
 
 def _3gaussian(x, p):
-    return p[0]*(1/(p[1]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[2])/p[1])**2))) + \
-            p[3]*(1/(p[4]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[5])/p[4])**2)))+ \
-            p[6]*(1/(p[7]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x_array-p[8])/p[7])**2)))
+    return p[0]*(1/(p[1]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-p[2])/p[1])**2))) + \
+            p[3]*(1/(p[4]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-p[5])/p[4])**2)))+ \
+            p[6]*(1/(p[7]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-p[8])/p[7])**2)))
 
 ###############
 
@@ -154,14 +154,12 @@ E0=E00*E0/max(E0)
 
 ############### Gaussian fit (3 Gaussian functions)
 
-pars=[max(E0),10e-15,t[E0.index(max(E0))],max(E0)/5,20e-15,t[E0.index(max(E0))]//4,max(E0)/5,20e-15,3*t[E0.index(max(E0))]//4] # Amp, sigma, center (per function) in form of list
+pars=[max(E0),10e-15,t[np.argmin(E0)],max(E0)/5,20e-15,t[np.argmin(E0)]//4,max(E0)/5,20e-15,3*t[np.argmin(E0)]//4] # Amp, sigma, center (per function) in form of list
 popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, t, E0, p0=pars)
 
 E0fit=_3gaussian(t, *popt_2gauss)
 
 fig = plt.figure(figsize=(4,3))
-gs = gridspec.GridSpec(1,1)
-ax1 = fig.add_subplot(gs[0])
 
 ax1.plot(t,E0, "ro")
 ax1.plot(t,E0fit, 'k--')#,\
@@ -171,9 +169,6 @@ ax1.set_xlim([-100,100])
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel('Amplitude', fontsize=16)
 ax1.legend(loc="best")
-ax1.xaxis.set_major_locator(ticker.MultipleLocator(20))
-ax1.xaxis.set_minor_locator(AutoMinorLocator(2))
-ax1.yaxis.set_minor_locator(AutoMinorLocator(2))
 ax1.tick_params(axis='both',which='major', direction="out", top="on", right="on", bottom="on", length=8, labelsize=8)
 ax1.tick_params(axis='both',which='minor', direction="out", top="on", right="on", bottom="on", length=5, labelsize=8)
 
@@ -224,7 +219,6 @@ plt.show()
 # plt.show()
 # fig.savefig("10fstrace_nochirp.pdf",bbox_inches='tight')
 
-# Estimate dispersion for our laser: a) due to air, b) due to optics elements
-# Check if number of fringes is consistent with tau=8fs
+# Check difference between calculated and experimental total GDD
+# Discuss Agrawal's expressions with Herman
 # Get theoretical expression for Fourier transform (for simple Gaussian spectrum)
-# Change model for chirp using Agrawal and map its parameters to exp GDD
