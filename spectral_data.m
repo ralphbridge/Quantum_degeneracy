@@ -39,8 +39,8 @@ t=(0:n-1)/(n*df);
 
 Iftest=exp(-(f-8e14).^2/(4*(0.5e13)^2));
 
-spectruml=Ilambda100fs_ir;
-spectrum=If100fs_ir;
+spectruml=Ilambda10fs;
+spectrum=If10fs;
 
 % for i=1:n % Used to clean up the spectrum
 %     if spectrum(i)<=0.01*max(spectrum)
@@ -51,16 +51,13 @@ spectrum=If100fs_ir;
 pulse=ifft(spectrum);
 
 figure
-subplot(2,1,1)
-plot(lambda,spectruml)
-xlabel('Frequency $Hz$','interpreter','latex')
-ylabel('Amplitude')
+plot(lambda,spectruml,'linewidth',2)
+xlabel('Wavelength $(nm)$','interpreter','latex','fontsize',20)
+ylabel('Power spectral density (a.u.)','interpreter','latex',fontsize=20)
+axis([600 1000 0 1])
+grid on
 
 It=abs(ifftshift(pulse));
-subplot(2,1,2)
-plot(t,It)
-xlabel('Time $s$','interpreter','latex')
-ylabel('Amplitude')
 
 Iprofile=zeros(size(It));
 tprofile=zeros(size(t));
@@ -77,5 +74,21 @@ Iprofile=Iprofile(find(Iprofile,1,'first'):find(Iprofile,1,'last'));
 tprofile=tprofile(find(tprofile,1,'first'):find(tprofile,1,'last'));
 tprofile=tprofile-min(tprofile);
 
+% figure
+% plot(tprofile,Iprofile)
+
+FSAC=readmatrix("FSAC.xlsx");
+
+m=length(FSAC)-1;
+
+clear t
+
+t=FSAC(2:m+1,1)-8.77e-5;
+trace=FSAC(2:m+1,2);
+
 figure
-plot(tprofile,Iprofile)
+plot(t,trace,linewidth=2)
+xlabel('Delay (a.u)','interpreter','latex','fontsize',20)
+ylabel('Autocorrelation signal (a.u.)','interpreter','latex',fontsize=20)
+axis([-1e-3 1e-3 0 1.1*max(trace)])
+grid on
