@@ -166,8 +166,6 @@ amp3=max(It)/5
 sigma3=20e-15
 cen3=3*t[np.argmin(It)]//4
 
-popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, t, It, p0=[amp1, cen1, sigma1, amp2, cen2, sigma2, amp3, cen3, sigma3])
-
 ttest=0
 Ittest=0
 
@@ -176,23 +174,25 @@ for i in range(len(t)):
         ttest=np.append(ttest,t[i])
         Ittest=np.append(Ittest,It[i])
 
-np.delete(ttest,0)        
-np.delete(Ittest,0)
+ttest=np.delete(ttest,0)        
+Ittest=np.delete(Ittest,0)
 
-Itfit=_3gaussian(t, *popt_2gauss)
+popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, ttest, Ittest, p0=[amp1, cen1, sigma1, amp2, cen2, sigma2, amp3, cen3, sigma3])
+
+Itfit=_3gaussian(ttest, *popt_2gauss)
 
 fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
-line1,=ax1.plot(t*1e15,It)
+line1,=ax1.plot(ttest*1e15,Ittest)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel('Amplitude', fontsize=16)
-ax1.set_xlim([-100,100])
+ax1.set_xlim([-50,50])
 
 plt.subplot(2,1,2)
-line2,=ax2.plot(t*1e15,Itfit)
+line2,=ax2.plot(ttest*1e15,Itfit)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax2.set_ylabel('Amplitude', fontsize=16)
-ax2.set_xlim([-100,100])
+ax2.set_xlim([-50,50])
 
 plt.show()
 
