@@ -43,10 +43,10 @@ def S_q(t,alpha,E0):
         j+=1
     return S
 
-def _3gaussian(x, p):
-    return p[0]*(1/(p[1]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-p[2])/p[1])**2))) + \
-            p[3]*(1/(p[4]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-p[5])/p[4])**2)))+ \
-            p[6]*(1/(p[7]*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-p[8])/p[7])**2)))
+def _3gaussian(t, amp1,cen1,sigma1, amp2,cen2,sigma2, amp3,cen3,sigma3):
+    return amp1*(1/(sigma1*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-cen1)/sigma1)**2))) + \
+            amp2*(1/(sigma2*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-cen2)/sigma2)**2)))+ \
+            amp3*(1/(sigma3*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((t-cen3)/sigma3)**2)))
 
 ###############
 
@@ -77,7 +77,7 @@ Ilir=(Ilir-min(Ilir))/max(Ilir)
 Iltest1=np.exp(-((lam-756e-9)/(2*20e-9))**2) # Single Gaussian
 Iltest2=np.exp(-((lam-756e-9)/(2*10e-9))**2)+0.75*np.exp(-((lam-800e-9)/(2*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(2*15e-9))**2) # Double Gaussian
 
-spectruml=Iltest2
+spectruml=Il
 
 f=np.zeros(n)
 spectrum=np.zeros(n)
@@ -154,25 +154,46 @@ E0=E00*E0/max(E0)
 
 ############### Gaussian fit (3 Gaussian functions)
 
-pars=[max(E0),10e-15,t[np.argmin(E0)],max(E0)/5,20e-15,t[np.argmin(E0)]//4,max(E0)/5,20e-15,3*t[np.argmin(E0)]//4] # Amp, sigma, center (per function) in form of list
-popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, t, E0, p0=pars)
+amp1=max(It)
+sigma1=10e-15
+cen1=t[np.argmin(It)]
 
-E0fit=_3gaussian(t, *popt_2gauss)
+amp2=max(It)/5
+sigma2=20e-15
+cen2=t[np.argmin(It)]//4
 
-fig = plt.figure(figsize=(4,3))
+amp3=max(It)/5
+sigma3=20e-15
+cen3=3*t[np.argmin(It)]//4
 
-ax1.plot(t,E0, "ro")
-ax1.plot(t,E0fit, 'k--')#,\
-         #label="y= %0.2f$e^{%0.2fx}$ + %0.2f" % (popt_exponential[0], popt_exponential[1], popt_exponential[2]))
-    
-ax1.set_xlim([-100,100])
+popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, t, It, p0=[amp1, cen1, sigma1, amp2, cen2, sigma2, amp3, cen3, sigma3])
+
+ttest=0
+Ittest=0
+
+for i in range(len(t)):
+    if t[i]>-50e-15 and t[i]<50e-15:
+        ttest=np.append(ttest,t[i])
+        Ittest=np.append(Ittest,It[i])
+
+np.delete(ttest,0)        
+np.delete(Ittest,0)
+
+Itfit=_3gaussian(t, *popt_2gauss)
+
+fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+plt.subplot(2,1,1)
+line1,=ax1.plot(t*1e15,It)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel('Amplitude', fontsize=16)
-ax1.legend(loc="best")
-ax1.tick_params(axis='both',which='major', direction="out", top="on", right="on", bottom="on", length=8, labelsize=8)
-ax1.tick_params(axis='both',which='minor', direction="out", top="on", right="on", bottom="on", length=5, labelsize=8)
+ax1.set_xlim([-100,100])
 
-fig.tight_layout()
+plt.subplot(2,1,2)
+line2,=ax2.plot(t*1e15,Itfit)
+ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax2.set_ylabel('Amplitude', fontsize=16)
+ax2.set_xlim([-100,100])
+
 plt.show()
 
 ############### 
