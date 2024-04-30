@@ -89,26 +89,25 @@ pars_1 = popt_2gauss[0:3]
 pars_2 = popt_2gauss[3:6]
 pars_3 = popt_2gauss[6:9]
 pars_4 = popt_2gauss[9:12]
-pars_5 = popt_2gauss[12:15]
-gauss_peak_1 = _1gaussian(x_array, *pars_1)
-gauss_peak_2 = _1gaussian(x_array, *pars_2)
-gauss_peak_3 = _1gaussian(x_array, *pars_3)
-gauss_peak_4 = _1gaussian(x_array, *pars_4)
-gauss_peak_5 = _1gaussian(x_array, *pars_5)
+# gauss_peak_1 = _1gaussian(x_array, *pars_1)
+# gauss_peak_2 = _1gaussian(x_array, *pars_2)
+# gauss_peak_3 = _1gaussian(x_array, *pars_3)
+# gauss_peak_4 = _1gaussian(x_array, *pars_4)
+# gauss_peak_5 = _1gaussian(x_array, *pars_5)
+
+pars_1=pars_4
+
+del pars_4
 
 fig,(ax1,ax2)= plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
 
-ax1.plot(x_array*1e15,_1gaussian(x_array,amp1,cen1,sigma1))
-ax1.plot(x_array*1e15,_1gaussian(x_array,amp2,cen2,sigma2))
-ax1.plot(x_array*1e15,_1gaussian(x_array,amp3,cen3,sigma3))
-ax1.plot(x_array*1e15,_1gaussian(x_array,amp4,cen4,sigma4))
-ax1.plot(x_array*1e15,_1gaussian(x_array,amp5,cen5,sigma5))
-ax1.plot(x_array*1e15,_1gaussian(x_array,pars_1[0],pars_1[1],pars_1[2]))
-ax1.plot(x_array*1e15,_1gaussian(x_array,pars_2[0],pars_2[1],pars_2[2]))
-ax1.plot(x_array*1e15,_1gaussian(x_array,pars_3[0],pars_3[1],pars_3[2]))
-ax1.plot(x_array*1e15,_1gaussian(x_array,pars_4[0],pars_4[1],pars_4[2]))
-ax1.plot(x_array*1e15,_1gaussian(x_array,pars_5[0],pars_5[1],pars_5[2]))
+myfit=2*_1gaussian(x_array,pars_1[0],pars_1[1],pars_1[2])+\
+    _1gaussian(x_array,pars_2[0],pars_2[1],pars_2[2])+\
+    _1gaussian(x_array,pars_3[0],pars_3[1],pars_3[2])
+
+ax1.plot(x_array*1e15,y_array_2gauss)
+
          #label="y= %0.2f$e^{%0.2fx}$ + %0.2f" % (popt_exponential[0], popt_exponential[1], popt_exponential[2]))
     
 # ax1.set_xlim(-5,105)
@@ -119,8 +118,8 @@ ax1.set_ylabel("y_array",family="serif",  fontsize=12)
 
 plt.subplot(2,1,2)
 
+ax2.plot(x_array*1e15,_3gaussian(x_array, *popt_2gauss),'.k')#,\
 ax2.plot(x_array*1e15,y_array_2gauss)
-ax2.plot(x_array*1e15,_3gaussian(x_array, *popt_2gauss), 'k--')#,\
          #label="y= %0.2f$e^{%0.2fx}$ + %0.2f" % (popt_exponential[0], popt_exponential[1], popt_exponential[2]))
     
 # ax1.set_xlim(-5,105)
