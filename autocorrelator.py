@@ -35,8 +35,8 @@ def S_q(t,E0):
         j+=1
     return S
 
-def _1gaussian(x, amp1,cen1,sigma1):
-    return amp1*(1/(sigma1*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen1)/sigma1)**2)))
+def _1gaussian(x, amp,cen,sigma):
+    return amp*(1/(sigma*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen)/sigma)**2)))
 
 def _3gaussian(x, amp1,cen1,sigma1, amp2,cen2,sigma2, amp3,cen3,sigma3, amp4,cen4,sigma4, amp5,cen5,sigma5):
     return amp1*(1/(sigma1*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen1)/sigma1)**2))) + \
@@ -44,6 +44,34 @@ def _3gaussian(x, amp1,cen1,sigma1, amp2,cen2,sigma2, amp3,cen3,sigma3, amp4,cen
             amp3*(1/(sigma3*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen3)/sigma3)**2)))+ \
             amp4*(1/(sigma4*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen4)/sigma4)**2)))+ \
             amp5*(1/(sigma5*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen5)/sigma5)**2)))
+
+def GaussianFit(x_array,y_array):
+
+    sigma1=1e-15
+    amp1=max(y_array)*sigma1
+    cen1=x_array[np.argmax(y_array)]
+
+    sigma2=5e-15
+    amp2=(max(y_array)/5)*sigma2
+    cen2=-2e-14
+
+    sigma3=5e-15
+    amp3=(max(y_array)/5)*sigma3
+    cen3=2e-14
+
+    sigma4=5e-15
+    amp4=(max(y_array)/5)*sigma4
+    cen4=-1e-14
+
+    sigma5=5e-15
+    amp5=(max(y_array)/5)*sigma5
+    cen5=1e-14
+
+    popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, x_array, y_array, p0=[amp1, cen1, sigma1, amp2, cen2, sigma2, amp3, cen3, sigma3, amp4, cen4, sigma4, amp5, cen5, sigma5])
+
+    perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+    
+    return popt_2gauss
 
 ###############
 
@@ -146,87 +174,61 @@ ax2.set_xlim([-100,100])
 
 plt.show()
 
-E0=np.sqrt(2*It/(c*eps0)) # check this two lines
-E0=E00*E0/max(E0)
+############### Gaussian fit (5 Gaussian functions)
 
-############### Gaussian fit (3 Gaussian functions)
+tt=t[len(t)//2-60:len(t)//2+60]
+Itt=It[len(t)//2-60:len(t)//2+60]
 
-sigma1=1e-15
-amp1=max(It)*sigma1
-cen1=t[np.argmax(It)]
+fit=GaussianFit(tt,Itt)
 
-sigma2=5e-15
-amp2=(max(It)/5)*sigma2
-cen2=-2e-14
+amp1=fit[0]
+cen1=fit[1]
+sigma1=fit[2]
 
-sigma3=5e-15
-amp3=(max(It)/5)*sigma3
-cen3=2e-14
+amp2=fit[3]
+cen2=fit[4]
+sigma2=fit[5]
 
-sigma4=5e-15
-amp4=(max(It)/5)*sigma4
-cen4=-1e-14
+amp3=fit[6]
+cen3=fit[7]
+sigma3=fit[8]
 
-sigma5=5e-15
-amp5=(max(It)/5)*sigma5
-cen5=1e-14
+amp4=fit[9]
+cen4=fit[10]
+sigma4=fit[11]
 
-popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, t, It, p0=[amp1, cen1, sigma1, amp2, cen2, sigma2, amp3, cen3, sigma3, amp4, cen4, sigma4, amp5, cen5, sigma5])
+amp5=fit[12]
+cen5=fit[13]
+sigma5=fit[14]
 
-perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+It_fit=_1gaussian(t,amp1,cen1,sigma1)+\
+    _1gaussian(t,amp2,cen2,sigma2)+\
+    _1gaussian(t,amp3,cen3,sigma3)+\
+    _1gaussian(t,amp4,cen4,sigma4)+\
+    _1gaussian(t,amp5,cen5,sigma5)
+    
 
-pars_1 = popt_2gauss[0:3]
-pars_2 = popt_2gauss[3:6]
-pars_3 = popt_2gauss[6:9]
-pars_4 = popt_2gauss[9:12]
-
-pars_1=pars_4
-
-del pars_4
-
-amp1=pars_1[0]
-cen1=pars_1[1]
-sigma1=pars_1[2]
-
-amp2=pars_2[0]
-cen2=pars_2[1]
-sigma2=pars_2[2]
-
-amp3=pars_3[0]
-cen3=pars_3[1]
-sigma3=pars_3[2]
-
-del pars_1,pars_2,pars_3
-
-It_fit=2*_1gaussian(t,amp1,cen1,sigma1)+_1gaussian(t,amp2,cen2,sigma2)+_1gaussian(t,amp3,cen3,sigma3)
-
-plt.plot(t*1e15,It_fit,'.k')
 plt.plot(t*1e15,It)
-
-plt.xlabel("t fs",family="serif",  fontsize=12)
-plt.ylabel("Intensity",family="serif",  fontsize=12)
-
-plt.xlim([-100,100])
-
-plt.show()
+plt.plot(t*1e15,It_fit)
+plt.xlim(-100,100)
 
 ############### 
 
 # Efield_exp=np.multiply(E0,np.cos((w+alpha*t)*t))
-n=10000
-tt=np.linspace(min(t),max(t),n)
-t=tt
-T1=np.sqrt(1+(gdd/T0**2)**2)*T0
-Efield=(E00/(np.sqrt(2*np.pi)*T1))*np.exp(-t**2/(2*T1**2))*np.cos(w*t+alpha*t**2)
-Squad=S_q(t,Efield)
+# n=10000
+# tt=np.linspace(min(t),max(t),n)
+# t=tt
+# T1=np.sqrt(1+(gdd/T0**2)**2)*T0
+# Efield=(E00/(np.sqrt(2*np.pi)*T1))*np.exp(-t**2/(2*T1**2))*np.cos(w*t+alpha*t**2)
+# Squad=S_q(t,Efield)
 
-fig,(ax1,ax3)=plt.subplots(2,1,tight_layout=True)
+# fig,(ax1,ax3)=plt.subplots(2,1,tight_layout=True)
 
-line1,=ax1.plot(t*1e15,Efield,lw=1)
-ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax1.set_ylabel('$E\ V/m$', fontsize=16)
-ax1.set_title(r'Electric field', fontsize=16, color='r')
-ax1.set_xlim([-100,100])
+# line1,=ax1.plot(t*1e15,Efield,lw=1)
+# ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+# ax1.set_ylabel('$E\ V/m$', fontsize=16)
+# ax1.set_title(r'Electric field', fontsize=16, color='r')
+# ax1.set_xlim([-100,100])
 
 # line2,=ax2.plot(t*1e15,Slin,lw=1)
 # ax2.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
@@ -234,23 +236,14 @@ ax1.set_xlim([-100,100])
 # ax2.set_title(r'Linear detector', fontsize=16, color='r')
 # ax2.set_xlim([-300,300])
 
-line3,=ax3.plot(t*1e15 ,Squad,lw=1)
-ax3.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
-ax3.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
-ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
-ax3.set_xlim([-100,100])
-
-plt.show()
-# fig.savefig("twogaussians_nochirp.pdf",bbox_inches='tight')
-
-# fig = plt.figure()
-# plt.plot(t*1e15,Squad,lw=1)
-# plt.xlabel(r'Time $t\ fs$', fontsize=16)
-# plt.ylabel(r'Intensity $I(t)\ W/m^2$', fontsize=16)
-# plt.xlim([-100,100])
+# line3,=ax3.plot(t*1e15 ,Squad,lw=1)
+# ax3.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
+# ax3.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
+# ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
+# ax3.set_xlim([-100,100])
 
 # plt.show()
-# fig.savefig("10fstrace_nochirp.pdf",bbox_inches='tight')
+# fig.savefig("twogaussians_nochirp.pdf",bbox_inches='tight')
 
 # Check difference between calculated and experimental total GDD
 # Discuss Agrawal's expressions with Herman
