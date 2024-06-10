@@ -125,7 +125,7 @@ df=(max(f)-min(f))/n
 #     elif f[i+1]-f[i]<dfmin:
 #         dfmin=f[i+1]-f[i]
 
-# df=dfmax
+# df=df
 
 # ftemp=np.arange(min(f),max(f),df)
 
@@ -141,7 +141,7 @@ df=(max(f)-min(f))/n
 # f=ftemp
 # spectrum=spectrumtemp
 
-# # del ftemp, spectrumtemp
+# del ftemp, spectrumtemp
 
 # ########## Increasing time resolution (by increasing frequency range) by 3^N
 
@@ -182,35 +182,37 @@ Itt=It[len(t)//2-60:len(t)//2+60]
 
 fit=GaussianFit(tt,Itt)
 
-amp1=fit[0]
-cen1=fit[1]
-sigma1=fit[2]
+# amp1=fit[0]
+# cen1=fit[1]
+# sigma1=fit[2]
 
-amp2=fit[3]
-cen2=fit[4]
+amp2=0.2*fit[3]
+cen2=2*fit[4]
 sigma2=fit[5]
 
-amp3=fit[6]
-cen3=fit[7]
+amp3=0.2*fit[6]
+cen3=2*fit[7]
 sigma3=fit[8]
 
-amp4=fit[9]
-cen4=fit[10]
-sigma4=fit[11]
+amp1=2.5*fit[9]
+cen1=0
+sigma1=1.5*fit[11] # Hadf to pick this value so I only use three Gaussians
 
-amp5=fit[12]
-cen5=fit[13]
-sigma5=fit[14]
+# amp5=fit[12]
+# cen5=fit[13]
+# sigma5=fit[14]
 
-It_fit=_1gaussian(t,amp1,cen1,sigma1)+\
-    _1gaussian(t,amp2,cen2,sigma2)+\
-    _1gaussian(t,amp3,cen3,sigma3)+\
-    _1gaussian(t,amp4,cen4,sigma4)+\
-    _1gaussian(t,amp5,cen5,sigma5)
-    
+N=5000
+
+t_fit=np.linspace(5*min(tt),5*max(tt),N)
+
+It_fit=_1gaussian(t_fit,amp1,cen1,sigma1)+\
+    _1gaussian(t_fit,amp2,cen2,sigma2)+\
+    _1gaussian(t_fit,amp3,cen3,sigma3)
+    # _1gaussian(t_fit,amp5,cen5,sigma5)
 
 plt.plot(t*1e15,It)
-plt.plot(t*1e15,It_fit)
+plt.plot(t_fit*1e15,It_fit)
 plt.xlim(-100,100)
 
 ###############
@@ -220,19 +222,19 @@ plt.xlim(-100,100)
 # tt=np.linspace(min(t),max(t),n)
 # t=tt
 # T1=np.sqrt(1+(gdd/T0**2)**2)*T0
-Efield=np.sqrt(2*It/(c*eps0))*np.cos(w*t+alpha*t**2)
-Squad=S_q(t,Efield)
+Efield=np.sqrt(2*It_fit/(c*eps0))*np.cos(w*t_fit+alpha*t_fit**2)
+Squad=S_q(t_fit,Efield)
 
 fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 
-line1,=ax1.plot(t*1e15,Efield,lw=1)
+line1,=ax1.plot(t_fit*1e15,Efield,lw=1)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel('$E\ V/m$', fontsize=16)
 ax1.set_title(r'Electric field', fontsize=16, color='r')
 ax1.set_xlim([-100,100])
 
-line2,=ax2.plot(t*1e15 ,Squad,lw=1)
-ax2.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
+line2,=ax2.plot(t_fit*1e15 ,Squad,lw=1)
+ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
 ax2.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
 ax2.set_title(r'Quadratic detector', fontsize=16, color='r')
 ax2.set_xlim([-100,100])
