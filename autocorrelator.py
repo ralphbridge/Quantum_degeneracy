@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as scipy
-import scipy.interpolate as inter
 
 eps0=8.85e-12
 c=3e8
@@ -164,43 +163,60 @@ fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
 line1,=ax1.plot(lam*1e9,spectruml)
 ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
-ax1.set_ylabel('Amplitude', fontsize=16)
+ax1.set_ylabel(r'Intensity $I\ W/m^2$', fontsize=16)
 ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
+
+major_tick = [200, 400, 600, 800, 1000]
+minor_tick = [300, 500, 700, 900]
+ax1.set_xticks(major_tick) # Grid
+ax1.set_xticks(minor_tick, minor=True)
+ax1.grid(which='both')
 
 plt.subplot(2,1,2)
 line2,=ax2.plot(t*1e15,It)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('Amplitude', fontsize=16)
+ax2.set_ylabel('Intensity $I\ W/m^2$', fontsize=16)
 ax2.set_xlim([-100,100])
 
+major_tick = np.arange(-100,100,20)
+minor_tick = np.arange(-100,100,10)
+ax2.set_xticks(major_tick)
+ax2.set_xticks(minor_tick, minor=True)
+ax2.grid(which='both')
+
+fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
 plt.show()
 
-############### Gaussian fit (5 Gaussian functions)
+############### Gaussian fit (3 Gaussian functions)
 
 tt=t[len(t)//2-60:len(t)//2+60]
 Itt=It[len(t)//2-60:len(t)//2+60]
 
 fit=GaussianFit(tt,Itt)
 
-# amp1=fit[0]
-# cen1=fit[1]
-# sigma1=fit[2]
-
-amp2=0.2*fit[3]
-cen2=2*fit[4]
+amp2=fit[3]
+cen2=fit[4]
 sigma2=fit[5]
 
-amp3=0.2*fit[6]
-cen3=2*fit[7]
+amp3=fit[6]
+cen3=fit[7]
 sigma3=fit[8]
 
-amp1=2.5*fit[9]
+amp1=2*fit[9]
 cen1=0
-sigma1=1.5*fit[11] # Hadf to pick this value so I only use three Gaussians
+sigma1=1.37*fit[11] # Hadf to pick this value so I only use three Gaussians
 
-# amp5=fit[12]
-# cen5=fit[13]
-# sigma5=fit[14]
+# amp2=0.15*fit[3]
+# cen2=2.5*fit[4]
+# sigma2=0.8*fit[5]
+
+# amp3=0.15*fit[6]
+# cen3=2.5*fit[7]
+# sigma3=0.8*fit[8]
+
+# amp1=2.5*fit[9]
+# cen1=0
+# sigma1=1.5*fit[11] # Hadf to pick this value so I only use three Gaussians
 
 N=5000
 
@@ -211,9 +227,19 @@ It_fit=_1gaussian(t_fit,amp1,cen1,sigma1)+\
     _1gaussian(t_fit,amp3,cen3,sigma3)
     # _1gaussian(t_fit,amp5,cen5,sigma5)
 
+plt.plot(t_fit*1e15,It_fit,'.')
 plt.plot(t*1e15,It)
-plt.plot(t_fit*1e15,It_fit)
 plt.xlim(-100,100)
+plt.xlabel(r'Time $t\ fs$', fontsize=16)
+plt.ylabel('Intensity $I\ W/m^2$', fontsize=16)
+major_tick = np.arange(-100,100,20)
+minor_tick = np.arange(-100,100,10)
+plt.xticks(major_tick)
+plt.xticks(minor_tick, minor=True)
+plt.grid(which='both')
+plt.legend(["Gaussian fit","Inverse Fourier transform"],loc="upper right")
+plt.savefig("GaussianFitting.pdf",bbox_inches='tight')
+plt.show()
 
 ###############
 
@@ -225,22 +251,29 @@ plt.xlim(-100,100)
 Efield=np.sqrt(2*It_fit/(c*eps0))*np.cos(w*t_fit+alpha*t_fit**2)
 Squad=S_q(t_fit,Efield)
 
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+# fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 
-line1,=ax1.plot(t_fit*1e15,Efield,lw=1)
-ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax1.set_ylabel('$E\ V/m$', fontsize=16)
-ax1.set_title(r'Electric field', fontsize=16, color='r')
-ax1.set_xlim([-100,100])
+# line1,=ax1.plot(t_fit*1e15,Efield,lw=1)
+# ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+# ax1.set_ylabel(r'Electric field $E\ V/m$', fontsize=16)
+# ax1.set_xlim([-100,100])
+# ax1.grid()
 
-line2,=ax2.plot(t_fit*1e15 ,Squad,lw=1)
-ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
-ax2.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
-ax2.set_title(r'Quadratic detector', fontsize=16, color='r')
-ax2.set_xlim([-100,100])
+# line2,=ax2.plot(t_fit*1e15 ,Squad,lw=1)
+# ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
+# ax2.set_ylabel(r'Quadratic detector $S_{quadratic}\ W/m^2$', fontsize=16)
+# ax2.set_xlim([-100,100])
+# ax2.grid()
 
+# plt.show()
+
+plt.plot(t_fit*1e15 ,Squad,lw=1)
+plt.xlabel(r'Time delay $\tau\ fs$', fontsize=16)
+plt.ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
+plt.xlim([-100,100])
+plt.grid()
+plt.savefig("GaussianFit_nochirp.pdf",bbox_inches='tight')
 plt.show()
-# fig.savefig("twogaussians_nochirp.pdf",bbox_inches='tight')
 
 # Check difference between calculated and experimental total GDD
 # Discuss Agrawal's expressions with Herman
