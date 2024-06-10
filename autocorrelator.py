@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as scipy
+import scipy.interpolate as inter
 
 eps0=8.85e-12
 c=3e8
@@ -131,8 +132,8 @@ df=(max(f)-min(f))/n
 # n=len(ftemp)
 # spectrumtemp=np.zeros(n)
 
-# spectrum_interp=interp1d(f,spectrum)
-# #spectrum_interp=UnivariateSpline(f,spectrum)
+# spectrum_interp=inter.interp1d(f,spectrum)
+# # spectrum_interp=inter.UnivariateSpline(f,spectrum)
 
 # for i in range(n):
 #     spectrumtemp[i]=spectrum_interp(ftemp[i])
@@ -140,9 +141,9 @@ df=(max(f)-min(f))/n
 # f=ftemp
 # spectrum=spectrumtemp
 
-# del ftemp, spectrumtemp
+# # del ftemp, spectrumtemp
 
-########### Increasing time resolution (by increasing frequency range) by 3^N
+# ########## Increasing time resolution (by increasing frequency range) by 3^N
 
 # N=1
 
@@ -212,37 +213,31 @@ plt.plot(t*1e15,It)
 plt.plot(t*1e15,It_fit)
 plt.xlim(-100,100)
 
-############### 
+###############
 
 # Efield_exp=np.multiply(E0,np.cos((w+alpha*t)*t))
 # n=10000
 # tt=np.linspace(min(t),max(t),n)
 # t=tt
 # T1=np.sqrt(1+(gdd/T0**2)**2)*T0
-# Efield=(E00/(np.sqrt(2*np.pi)*T1))*np.exp(-t**2/(2*T1**2))*np.cos(w*t+alpha*t**2)
-# Squad=S_q(t,Efield)
+Efield=np.sqrt(2*It/(c*eps0))*np.cos(w*t+alpha*t**2)
+Squad=S_q(t,Efield)
 
-# fig,(ax1,ax3)=plt.subplots(2,1,tight_layout=True)
+fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 
-# line1,=ax1.plot(t*1e15,Efield,lw=1)
-# ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-# ax1.set_ylabel('$E\ V/m$', fontsize=16)
-# ax1.set_title(r'Electric field', fontsize=16, color='r')
-# ax1.set_xlim([-100,100])
+line1,=ax1.plot(t*1e15,Efield,lw=1)
+ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax1.set_ylabel('$E\ V/m$', fontsize=16)
+ax1.set_title(r'Electric field', fontsize=16, color='r')
+ax1.set_xlim([-100,100])
 
-# line2,=ax2.plot(t*1e15,Slin,lw=1)
-# ax2.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
-# ax2.set_ylabel('$S_{linear}\ W/m^2$', fontsize=16)
-# ax2.set_title(r'Linear detector', fontsize=16, color='r')
-# ax2.set_xlim([-300,300])
+line2,=ax2.plot(t*1e15 ,Squad,lw=1)
+ax2.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
+ax2.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
+ax2.set_title(r'Quadratic detector', fontsize=16, color='r')
+ax2.set_xlim([-100,100])
 
-# line3,=ax3.plot(t*1e15 ,Squad,lw=1)
-# ax3.set_xlabel(r'Time difference $\tau\ fs$', fontsize=16)
-# ax3.set_ylabel('$S_{quadratic}\ W/m^2$', fontsize=16)
-# ax3.set_title(r'Quadratic detector', fontsize=16, color='r')
-# ax3.set_xlim([-100,100])
-
-# plt.show()
+plt.show()
 # fig.savefig("twogaussians_nochirp.pdf",bbox_inches='tight')
 
 # Check difference between calculated and experimental total GDD
