@@ -13,8 +13,8 @@ FWHM=8e-15
 T0=FWHM
 E00=np.sqrt(2*1e14/(c*eps0))
 
-# gdd=10e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-gdd=0
+gdd=5e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
+# gdd=0
 # alpha=1e28 # complex part of the beam parameter Gamma
 alpha=w*gdd/T0**3
 
@@ -73,6 +73,9 @@ def GaussianFit(x_array,y_array):
     
     return popt_2gauss
 
+def chirping(T0,GDD):
+    T1=np.sqrt(1+(GDD/(T0**2))**2)*T0
+    return T1
 ###############
 
 S=pd.read_excel("spectrum.xlsx").to_numpy()
@@ -194,33 +197,37 @@ Itt=It[len(t)//2-60:len(t)//2+60]
 
 fit=GaussianFit(tt,Itt)
 
-amp2=fit[3]
-cen2=fit[4]
-sigma2=fit[5]
+# amp2=fit[3]
+# cen2=fit[4]
+# sigma2=fit[5]
 
-amp3=fit[6]
-cen3=fit[7]
-sigma3=fit[8]
+# amp3=fit[6]
+# cen3=fit[7]
+# sigma3=fit[8]
 
-amp1=2*fit[9]
-cen1=0
-sigma1=1.37*fit[11] # Hadf to pick this value so I only use three Gaussians
-
-# amp2=0.15*fit[3]
-# cen2=2.5*fit[4]
-# sigma2=0.8*fit[5]
-
-# amp3=0.15*fit[6]
-# cen3=2.5*fit[7]
-# sigma3=0.8*fit[8]
-
-# amp1=2.5*fit[9]
+# amp1=2*fit[9]
 # cen1=0
-# sigma1=1.5*fit[11] # Hadf to pick this value so I only use three Gaussians
+# sigma1=1.37*fit[11] # Had to pick this value so I only use three Gaussians
+
+amp2=0.15*fit[3]
+cen2=2.5*fit[4]
+sigma2=0.8*fit[5]
+
+amp3=0.15*fit[6]
+cen3=2.5*fit[7]
+sigma3=0.8*fit[8]
+
+amp1=2.5*fit[9]
+cen1=0
+sigma1=1.5*fit[11] # Had to pick this value so I only use three Gaussians
 
 N=5000
 
 t_fit=np.linspace(5*min(tt),5*max(tt),N)
+
+sigma1=chirping(sigma1,gdd)
+sigma2=chirping(sigma2,gdd)
+sigma3=chirping(sigma3,gdd)
 
 It_fit=_1gaussian(t_fit,amp1,cen1,sigma1)+\
     _1gaussian(t_fit,amp2,cen2,sigma2)+\
@@ -243,37 +250,32 @@ plt.show()
 
 ###############
 
-# Efield_exp=np.multiply(E0,np.cos((w+alpha*t)*t))
-# n=10000
-# tt=np.linspace(min(t),max(t),n)
-# t=tt
-# T1=np.sqrt(1+(gdd/T0**2)**2)*T0
 Efield=np.sqrt(2*It_fit/(c*eps0))*np.cos(w*t_fit+alpha*t_fit**2)
 Squad=S_q(t_fit,Efield)
 
-# fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 
-# line1,=ax1.plot(t_fit*1e15,Efield,lw=1)
-# ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-# ax1.set_ylabel(r'Electric field $E\ V/m$', fontsize=16)
-# ax1.set_xlim([-100,100])
-# ax1.grid()
+line1,=ax1.plot(t_fit*1e15,Efield,lw=1)
+ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax1.set_ylabel(r'Electric field $E\ V/m$', fontsize=16)
+ax1.set_xlim([-100,100])
+ax1.grid()
 
-# line2,=ax2.plot(t_fit*1e15 ,Squad,lw=1)
-# ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
-# ax2.set_ylabel(r'Quadratic detector $S_{quadratic}\ W/m^2$', fontsize=16)
-# ax2.set_xlim([-100,100])
-# ax2.grid()
+line2,=ax2.plot(t_fit*1e15 ,Squad,lw=1)
+ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
+ax2.set_ylabel(r'Quadratic detector $S_{quadratic}\ W/m^2$', fontsize=16)
+ax2.set_xlim([-100,100])
+ax2.grid()
 
-# plt.show()
-
-plt.plot(t_fit*1e15 ,Squad,lw=1)
-plt.xlabel(r'Time delay $\tau\ fs$', fontsize=16)
-plt.ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
-plt.xlim([-100,100])
-plt.grid()
-plt.savefig("GaussianFit_nochirp.pdf",bbox_inches='tight')
 plt.show()
+
+# plt.plot(t_fit*1e15 ,Squad,lw=1)
+# plt.xlabel(r'Time delay $\tau\ fs$', fontsize=16)
+# plt.ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
+# plt.xlim([-100,100])
+# plt.grid()
+# plt.savefig("GaussianFit_nochirp.pdf",bbox_inches='tight')
+# plt.show()
 
 # Check difference between calculated and experimental total GDD
 # Discuss Agrawal's expressions with Herman
