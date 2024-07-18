@@ -13,8 +13,8 @@ FWHM=8e-15
 T0=FWHM
 E00=np.sqrt(2*1e14/(c*eps0))
 
-gdd=5e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-# gdd=0
+# gdd=5e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
+gdd=0
 # alpha=1e28 # complex part of the beam parameter Gamma
 alpha=w*gdd/T0**3
 
