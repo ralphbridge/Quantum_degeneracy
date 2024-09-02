@@ -13,8 +13,8 @@ FWHM=8e-15
 T0=FWHM
 E00=np.sqrt(2*1e14/(c*eps0))
 
-# gdd=10e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-gdd=0
+gdd=5e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
+# gdd=0
 # alpha=1e28 # complex part of the beam parameter Gamma
 alpha=w*gdd/T0**3
 
@@ -26,6 +26,14 @@ def E0shift(E0,j):
         Ef[i]=Eftemp[idx]
     del Eftemp
     return Ef
+
+def S_l(t,E0):
+    S=np.zeros(len(t))
+    j=0
+    for tau in t:            
+        S[j]=np.trapz((E0+E0shift(E0,j))**2,t)
+        j+=1
+    return S
 
 def S_q(t,E0):
     S=np.zeros(len(t))
@@ -46,6 +54,18 @@ def _3gaussian(x, amp1,cen1,sigma1, amp2,cen2,sigma2, amp3,cen3,sigma3, amp4,cen
             amp5*(1/(sigma5*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen5)/sigma5)**2)))
 
 def GaussianFit(x_array,y_array):
+
+    sigma=1e-15
+    amp=max(y_array)*sigma
+    cen=x_array[np.argmax(y_array)]
+
+    popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_1gaussian, x_array, y_array, p0=[amp, cen, sigma])
+
+    perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+    
+    return popt_2gauss
+
+def GaussianFit3(x_array,y_array):
 
     sigma1=1e-15
     amp1=max(y_array)*sigma1
@@ -78,34 +98,49 @@ def chirping(T0,GDD):
     return T1
 ###############
 
-S=pd.read_excel("spectrum.xlsx").to_numpy()
-n=np.size(S,0)
+case=1
 
-lam=np.zeros(np.size(S,0))
-Il=np.zeros(np.size(S,0))
-Iluv=np.zeros(np.size(S,0))
-Ilir=np.zeros(np.size(S,0))
+if case!=1 and case!=2:
+    S=pd.read_excel("spectrum.xlsx").to_numpy()
+    n=np.size(S,0)
+    lam=np.zeros(np.size(S,0))
+    Il=np.zeros(np.size(S,0))
+    Iluv=np.zeros(np.size(S,0))
+    Ilir=np.zeros(np.size(S,0))
+else:
+    n=1000
+    lam=np.linspace(100,2000,n)*1e-9
 
-for j in range(0,np.size(S,1)):
-    for i in range (0,np.size(S,0)):
-        #print(S[i][j])
-        if j==0:
-            lam[i]=(S[i][j])*1e-9
-        elif j==1:
-            Il[i]=S[i][j]
-        elif j==2:
-            Iluv[i]=S[i][j]
-        else:
-            Ilir[i]=S[i][j]
+if case!=1 and case!=2:
+    for j in range(0,np.size(S,1)):
+        for i in range (0,np.size(S,0)):
+            #print(S[i][j])
+            if j==0:
+                lam[i]=(S[i][j])*1e-9
+            elif j==1:
+                Il[i]=S[i][j]
+            elif j==2:
+                Iluv[i]=S[i][j]
+            else:
+                Ilir[i]=S[i][j]
 
-Il=(Il-min(Il))/max(Il)
-Iluv=(Iluv-min(Iluv))/max(Iluv)
-Ilir=(Ilir-min(Ilir))/max(Ilir)
+            Il=(Il-min(Il))/max(Il)
+            Iluv=(Iluv-min(Iluv))/max(Iluv)
+            Ilir=(Ilir-min(Ilir))/max(Ilir)
 
-Iltest1=np.exp(-((lam-756e-9)/(2*20e-9))**2) # Single Gaussian
-Iltest2=np.exp(-((lam-756e-9)/(2*10e-9))**2)+0.75*np.exp(-((lam-800e-9)/(2*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(2*15e-9))**2) # Double Gaussian
+Iltest1=np.exp(-((lam-756e-9)/(np.sqrt(2)*25e-9))**2) # Single Gaussian
+Iltest2=np.exp(-((lam-756e-9)/(np.sqrt(2)*20e-9))**2)+0.75*np.exp(-((lam-800e-9)/(np.sqrt(2)*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(np.sqrt(2)*15e-9))**2) # Triple Gaussian
 
-spectruml=Il
+if case==1:
+    spectruml=Iltest1
+elif case==2:
+    spectruml=Iltest2
+elif case==3:
+    spectruml=Il
+elif case==4:
+    spectruml=Iluv
+elif case==5:
+    spectruml=Ilir
 
 f=np.zeros(n)
 spectrum=np.zeros(n)
@@ -166,7 +201,7 @@ fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
 line1,=ax1.plot(lam*1e9,spectruml)
 ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
-ax1.set_ylabel(r'Intensity $I\ W/m^2$', fontsize=16)
+ax1.set_ylabel(r'$I\ W/m^2$', fontsize=16)
 ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
 
 major_tick = [200, 400, 600, 800, 1000]
@@ -178,7 +213,7 @@ ax1.grid(which='both')
 plt.subplot(2,1,2)
 line2,=ax2.plot(t*1e15,It)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('Intensity $I\ W/m^2$', fontsize=16)
+ax2.set_ylabel('$I\ W/m^2$', fontsize=16)
 ax2.set_xlim([-100,100])
 
 major_tick = np.arange(-100,100,20)
@@ -192,10 +227,12 @@ plt.show()
 
 ############### Gaussian fit (3 Gaussian functions)
 
-tt=t[len(t)//2-60:len(t)//2+60]
-Itt=It[len(t)//2-60:len(t)//2+60]
+if case==3:
 
-fit=GaussianFit(tt,Itt)
+    tt=t[len(t)//2-60:len(t)//2+60]
+    Itt=It[len(t)//2-60:len(t)//2+60]
+
+    fit=GaussianFit3(tt,Itt)
 
 # amp2=fit[3]
 # cen2=fit[4]
@@ -209,32 +246,54 @@ fit=GaussianFit(tt,Itt)
 # cen1=0
 # sigma1=1.37*fit[11] # Had to pick this value so I only use three Gaussians
 
-amp2=0.15*fit[3]
-cen2=2.5*fit[4]
-sigma2=0.8*fit[5]
+    amp2=0.15*fit[3]
+    cen2=2.5*fit[4]
+    sigma2=0.8*fit[5]
 
-amp3=0.15*fit[6]
-cen3=2.5*fit[7]
-sigma3=0.8*fit[8]
+    amp3=0.15*fit[6]
+    cen3=2.5*fit[7]
+    sigma3=0.8*fit[8]
 
-amp1=2.5*fit[9]
-cen1=0
-sigma1=1.5*fit[11] # Had to pick this value so I only use three Gaussians
+    amp1=2.5*fit[9]
+    cen1=0
+    sigma1=1.5*fit[11] # Had to pick this value so I only use three Gaussians
 
-N=5000
+    N=5000
 
-t_fit=np.linspace(5*min(tt),5*max(tt),N)
+    t_fit=np.linspace(5*min(tt),5*max(tt),N)
 
-sigma1=chirping(sigma1,gdd)
-sigma2=chirping(sigma2,gdd)
-sigma3=chirping(sigma3,gdd)
+    sigma1=chirping(sigma1,gdd)
+    sigma2=chirping(sigma2,gdd)
+    sigma3=chirping(sigma3,gdd)
 
-It_fit=_1gaussian(t_fit,amp1,cen1,sigma1)+\
-    _1gaussian(t_fit,amp2,cen2,sigma2)+\
-    _1gaussian(t_fit,amp3,cen3,sigma3)
+    It_fit=_1gaussian(t_fit,amp1,cen1,sigma1)+\
+            _1gaussian(t_fit,amp2,cen2,sigma2)+\
+            _1gaussian(t_fit,amp3,cen3,sigma3)
     # _1gaussian(t_fit,amp5,cen5,sigma5)
+else:
+    tt=t[len(t)//2-60:len(t)//2+60]
+    Itt=It[len(t)//2-60:len(t)//2+60]
 
-plt.plot(t_fit*1e15,It_fit,'.')
+    fit=GaussianFit(tt,Itt)
+
+    amp=fit[0]
+    cen=fit[1]
+    sigma=fit[2]
+
+    N=5000
+
+    t_fit=np.linspace(5*min(tt),5*max(tt),N)
+
+    sigma=chirping(sigma,gdd)
+
+    It_fit=_1gaussian(t_fit,amp,cen,sigma)
+    
+t=t_fit
+It=It_fit
+
+if case==3:
+    plt.plot(t_fit*1e15,It_fit,'.')
+    
 plt.plot(t*1e15,It)
 plt.xlim(-100,100)
 plt.xlabel(r'Time $t\ fs$', fontsize=16)
@@ -250,23 +309,30 @@ plt.show()
 
 ###############
 
-Efield=np.sqrt(2*It_fit/(c*eps0))*np.cos(w*t_fit+alpha*t_fit**2)
-Squad=S_q(t_fit,Efield)
+Efield=np.sqrt(2*It/(c*eps0))*np.cos(w*t+alpha*t**2)
+Slinear=S_l(t,Efield)
+Squad=S_q(t,Efield)
 
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
 
-line1,=ax1.plot(t_fit*1e15,Efield,lw=1)
+line1,=ax1.plot(t*1e15,Efield,lw=1)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax1.set_ylabel(r'Electric field $E\ V/m$', fontsize=16)
-ax1.set_xlim([-100,100])
+ax1.set_ylabel(r'$E\ V/m$', fontsize=16)
+ax1.set_xlim([-50,50])
 ax1.grid()
 
-line2,=ax2.plot(t_fit*1e15 ,Squad,lw=1)
+line2,=ax2.plot(t*1e15 ,Slinear,lw=1)
 ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
-ax2.set_ylabel(r'Quadratic detector $S_{quadratic}\ W/m^2$', fontsize=16)
-ax2.set_xlim([-100,100])
+ax2.set_ylabel(r'$S_{linear}\ W/m^2$', fontsize=16)
+ax2.set_xlim([-50,50])
 ax2.grid()
 
+line3,=ax3.plot(t*1e15 ,Squad,lw=1)
+ax3.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
+ax3.set_ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
+ax3.set_xlim([-50,50])
+ax3.grid()
+plt.savefig("FieldTrace_chirp.pdf",bbox_inches='tight')
 plt.show()
 
 # plt.plot(t_fit*1e15 ,Squad,lw=1)
@@ -274,7 +340,6 @@ plt.show()
 # plt.ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
 # plt.xlim([-100,100])
 # plt.grid()
-# plt.savefig("GaussianFit_nochirp.pdf",bbox_inches='tight')
 # plt.show()
 
 # Check difference between calculated and experimental total GDD
