@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as scipy
+import math
 
 eps0=8.85e-12
 c=3e8
@@ -13,8 +14,8 @@ FWHM=8e-15
 T0=FWHM
 E00=np.sqrt(2*1e14/(c*eps0))
 
-gdd=5e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-# gdd=0
+# gdd=5e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
+gdd=0
 # alpha=1e28 # complex part of the beam parameter Gamma
 alpha=w*gdd/T0**3
 
@@ -55,13 +56,17 @@ def _3gaussian(x, amp1,cen1,sigma1, amp2,cen2,sigma2, amp3,cen3,sigma3, amp4,cen
 
 def GaussianFit(x_array,y_array):
 
-    sigma=1e-15
-    amp=max(y_array)*sigma
-    cen=x_array[np.argmax(y_array)]
+    # sigma=10e-15
+    # amp=max(y_array)*sigma
+    # cen=x_array[np.argmax(y_array)]
 
-    popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_1gaussian, x_array, y_array, p0=[amp, cen, sigma])
+    popt_2gauss, _ = scipy.optimize.curve_fit(_1gaussian, x_array, y_array)#, p0=[amp, cen, sigma])
 
-    perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+    # perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+    
+    # print(amp)
+    # print(cen)
+    # print(sigma)
     
     return popt_2gauss
 
@@ -96,6 +101,9 @@ def GaussianFit3(x_array,y_array):
 def chirping(T0,GDD):
     T1=np.sqrt(1+(GDD/(T0**2))**2)*T0
     return T1
+
+def roundup(x):
+    return int(math.ceil(x / 100.0)) * 100
 ###############
 
 case=1
@@ -128,7 +136,7 @@ if case!=1 and case!=2:
             Iluv=(Iluv-min(Iluv))/max(Iluv)
             Ilir=(Ilir-min(Ilir))/max(Ilir)
 
-Iltest1=np.exp(-((lam-756e-9)/(np.sqrt(2)*25e-9))**2) # Single Gaussian
+Iltest1=np.exp(-((lam-756e-9)/(np.sqrt(2)*15e-9))**2) # Single Gaussian
 Iltest2=np.exp(-((lam-756e-9)/(np.sqrt(2)*20e-9))**2)+0.75*np.exp(-((lam-800e-9)/(np.sqrt(2)*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(np.sqrt(2)*15e-9))**2) # Triple Gaussian
 
 if case==1:
@@ -204,8 +212,8 @@ ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
 ax1.set_ylabel(r'$I\ W/m^2$', fontsize=16)
 ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
 
-major_tick = [200, 400, 600, 800, 1000]
-minor_tick = [300, 500, 700, 900]
+major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
+minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
 ax1.set_xticks(major_tick) # Grid
 ax1.set_xticks(minor_tick, minor=True)
 ax1.grid(which='both')
@@ -271,14 +279,21 @@ if case==3:
             _1gaussian(t_fit,amp3,cen3,sigma3)
     # _1gaussian(t_fit,amp5,cen5,sigma5)
 else:
-    tt=t[len(t)//2-60:len(t)//2+60]
-    Itt=It[len(t)//2-60:len(t)//2+60]
+    tt=t[len(t)//2-200:len(t)//2+200]
+    Itt=It[len(t)//2-200:len(t)//2+200]
+    
+    plt.plot(tt,Itt)
+    plt.show()
 
     fit=GaussianFit(tt,Itt)
 
     amp=fit[0]
     cen=fit[1]
     sigma=fit[2]
+    
+    print(amp)
+    print(cen)
+    print(sigma)
 
     N=5000
 
@@ -294,14 +309,14 @@ It=It_fit
 if case==3:
     plt.plot(t_fit*1e15,It_fit,'.')
     
-plt.plot(t*1e15,It)
-plt.xlim(-100,100)
+plt.plot(t,It)
+# plt.xlim(-20,20)
 plt.xlabel(r'Time $t\ fs$', fontsize=16)
 plt.ylabel('Intensity $I\ W/m^2$', fontsize=16)
-major_tick = np.arange(-100,100,20)
-minor_tick = np.arange(-100,100,10)
-plt.xticks(major_tick)
-plt.xticks(minor_tick, minor=True)
+# major_tick = np.arange(-100,100,20)
+# minor_tick = np.arange(-100,100,10)
+# plt.xticks(major_tick)
+# plt.xticks(minor_tick, minor=True)
 plt.grid(which='both')
 plt.legend(["Gaussian fit","Inverse Fourier transform"],loc="upper right")
 plt.savefig("GaussianFitting.pdf",bbox_inches='tight')
@@ -318,19 +333,19 @@ fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
 line1,=ax1.plot(t*1e15,Efield,lw=1)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel(r'$E\ V/m$', fontsize=16)
-ax1.set_xlim([-50,50])
+ax1.set_xlim([-20,20])
 ax1.grid()
 
 line2,=ax2.plot(t*1e15 ,Slinear,lw=1)
 ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
 ax2.set_ylabel(r'$S_{linear}\ W/m^2$', fontsize=16)
-ax2.set_xlim([-50,50])
+ax2.set_xlim([-20,20])
 ax2.grid()
 
 line3,=ax3.plot(t*1e15 ,Squad,lw=1)
 ax3.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
 ax3.set_ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
-ax3.set_xlim([-50,50])
+ax3.set_xlim([-20,20])
 ax3.grid()
 plt.savefig("FieldTrace_chirp.pdf",bbox_inches='tight')
 plt.show()
