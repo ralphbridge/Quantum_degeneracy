@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as scipy
 import math
-from scipy.stats import norm
 
 eps0=8.85e-12
 c=3e8
@@ -15,10 +14,12 @@ T0=FWHM/(2*np.sqrt(2*np.log(2)))
 # T0=FWHM
 E00=np.sqrt(2*1e14/(c*eps0))
 
-gdd=2 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-# gdd=0
+# gdd=2 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
+gdd=1
 # alpha=1e28 # complex part of the beam parameter Gamma
 alpha=w*gdd*1e-30/T0**3
+
+case=3
 
 def E0shift(E0,j):
     Ef=np.zeros(len(E0))
@@ -63,7 +64,7 @@ def GaussianFit(x_array,y_array):
 
     popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_1gaussian, x_array, y_array, p0=[amp, cen, sigma])
 
-    perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+    # perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
     
     plt.plot(x_array*1e15,y_array)
     plt.xlim([-20,20])
@@ -101,7 +102,7 @@ def GaussianFit3(x_array,y_array):
 
     popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_3gaussian, x_array, y_array, p0=[amp1, cen1, sigma1, amp2, cen2, sigma2, amp3, cen3, sigma3, amp4, cen4, sigma4, amp5, cen5, sigma5])
 
-    perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+    # perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
     
     return popt_2gauss
 
@@ -112,8 +113,6 @@ def chirping(T0,GDD):
 def roundup(x):
     return int(math.ceil(x / 100.0)) * 100
 ###############
-
-case=1
 
 if case!=1 and case!=2:
     S=pd.read_excel("spectrum.xlsx").to_numpy()
@@ -135,9 +134,9 @@ if case!=1 and case!=2:
             else:
                 Ilir[i]=S[i][j]
 
-            Il=(Il-min(Il))/max(Il)
-            Iluv=(Iluv-min(Iluv))/max(Iluv)
-            Ilir=(Ilir-min(Ilir))/max(Ilir)
+    Il=(Il-min(Il))/max(Il)
+    Iluv=(Iluv-min(Iluv))/max(Iluv)
+    Ilir=(Ilir-min(Ilir))/max(Ilir)
 
 # Iltest1=np.exp(-((lam-756e-9)/(np.sqrt(2)*15e-9))**2) # Single Gaussian
 # Iltest2=np.exp(-((lam-756e-9)/(np.sqrt(2)*20e-9))**2)+0.75*np.exp(-((lam-800e-9)/(np.sqrt(2)*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(np.sqrt(2)*15e-9))**2) # Triple Gaussian
@@ -258,9 +257,9 @@ if case==3:
 
     t_fit=np.linspace(5*min(tt),5*max(tt),N)
 
-    sigma1=chirping(sigma1,gdd)
-    sigma2=chirping(sigma2,gdd)
-    sigma3=chirping(sigma3,gdd)
+    sigma1=chirping(sigma1,gdd*1e-30)
+    sigma2=chirping(sigma2,gdd*1e-30)
+    sigma3=chirping(sigma3,gdd*1e-30)
 
     It_fit=_1gaussian(t_fit,amp1,cen1,sigma1)+\
             _1gaussian(t_fit,amp2,cen2,sigma2)+\
@@ -282,14 +281,14 @@ elif case!=1 and case!=2:
 
     t_fit=np.linspace(5*min(tt),5*max(tt),N)
 
-    sigma=chirping(sigma,gdd)
+    sigma=chirping(sigma,gdd*1e-30)
 
     It_fit=1/(sigma*(np.sqrt(2*np.pi)))*(np.exp((-1.0/2.0)*(((t_fit-cen)/sigma)**2)))
     
     It_fit=max(Itt)*It_fit/max(It_fit)
 else:
     sigma=T0
-    sigma=chirping(sigma,gdd)
+    sigma=chirping(sigma,gdd*1e-30)
     t_fit=np.linspace(-50,50,N)*1e-15
     It_fit=1/(sigma*(np.sqrt(2*np.pi)))*(np.exp((-1.0/2.0)*(((t_fit)/sigma)**2)))
     
@@ -318,7 +317,7 @@ Efield=np.sqrt(2*It/(c*eps0))*np.cos(w*t+alpha*t**2)
 Slinear=S_l(t,Efield)
 Squad=S_q(t,Efield)
 
-fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
+fig,(ax1,ax3)=plt.subplots(2,1,tight_layout=True)
 
 line1,=ax1.plot(t*1e15,Efield,lw=1)
 ax1.plot(t*1e15,np.sqrt(2*It/(c*eps0)),'.',alpha=0.01)
@@ -327,11 +326,11 @@ ax1.set_ylabel(r'$E\ V/m$', fontsize=16)
 ax1.set_xlim([-20,20])
 ax1.grid()
 
-line2,=ax2.plot(t*1e15 ,Slinear,lw=1)
-ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
-ax2.set_ylabel(r'$S_{linear}\ W/m^2$', fontsize=16)
-ax2.set_xlim([-20,20])
-ax2.grid()
+# line2,=ax2.plot(t*1e15 ,Slinear,lw=1)
+# ax2.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
+# ax2.set_ylabel(r'$S_{linear}\ W/m^2$', fontsize=16)
+# ax2.set_xlim([-20,20])
+# ax2.grid()
 
 line3,=ax3.plot(t*1e15 ,Squad,lw=1)
 ax3.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
