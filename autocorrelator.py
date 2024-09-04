@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as scipy
 import math
+from scipy.stats import norm
 
 eps0=8.85e-12
 c=3e8
@@ -10,14 +11,14 @@ lamlaser=756e-9 # laser central wavelength
 k=2*np.pi/lamlaser
 w=2*np.pi*c/lamlaser
 FWHM=8e-15
-# T0=FWHM/(2*np.sqrt(2*np.log(2)))
-T0=FWHM
+T0=FWHM/(2*np.sqrt(2*np.log(2)))
+# T0=FWHM
 E00=np.sqrt(2*1e14/(c*eps0))
 
-# gdd=5e-30 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-gdd=0
+gdd=2 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
+# gdd=0
 # alpha=1e28 # complex part of the beam parameter Gamma
-alpha=w*gdd/T0**3
+alpha=w*gdd*1e-30/T0**3
 
 def E0shift(E0,j):
     Ef=np.zeros(len(E0))
@@ -56,17 +57,23 @@ def _3gaussian(x, amp1,cen1,sigma1, amp2,cen2,sigma2, amp3,cen3,sigma3, amp4,cen
 
 def GaussianFit(x_array,y_array):
 
-    # sigma=10e-15
-    # amp=max(y_array)*sigma
-    # cen=x_array[np.argmax(y_array)]
+    sigma=6.5e-15
+    amp=max(y_array)
+    cen=0
 
-    popt_2gauss, _ = scipy.optimize.curve_fit(_1gaussian, x_array, y_array)#, p0=[amp, cen, sigma])
+    popt_2gauss, pcov_2gauss = scipy.optimize.curve_fit(_1gaussian, x_array, y_array, p0=[amp, cen, sigma])
 
-    # perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
+    perr_2gauss = np.sqrt(np.diag(pcov_2gauss))
     
-    # print(amp)
-    # print(cen)
-    # print(sigma)
+    plt.plot(x_array*1e15,y_array)
+    plt.xlim([-20,20])
+    plt.grid(which='both')
+    plt.show()
+    
+    y_fit=_1gaussian(x_array, popt_2gauss[0], popt_2gauss[1], popt_2gauss[2])
+    
+    plt.plot(x_array*1e15,y_fit,'.')
+    plt.show()
     
     return popt_2gauss
 
@@ -115,11 +122,7 @@ if case!=1 and case!=2:
     Il=np.zeros(np.size(S,0))
     Iluv=np.zeros(np.size(S,0))
     Ilir=np.zeros(np.size(S,0))
-else:
-    n=1000
-    lam=np.linspace(100,2000,n)*1e-9
 
-if case!=1 and case!=2:
     for j in range(0,np.size(S,1)):
         for i in range (0,np.size(S,0)):
             #print(S[i][j])
@@ -136,28 +139,25 @@ if case!=1 and case!=2:
             Iluv=(Iluv-min(Iluv))/max(Iluv)
             Ilir=(Ilir-min(Ilir))/max(Ilir)
 
-Iltest1=np.exp(-((lam-756e-9)/(np.sqrt(2)*15e-9))**2) # Single Gaussian
-Iltest2=np.exp(-((lam-756e-9)/(np.sqrt(2)*20e-9))**2)+0.75*np.exp(-((lam-800e-9)/(np.sqrt(2)*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(np.sqrt(2)*15e-9))**2) # Triple Gaussian
+# Iltest1=np.exp(-((lam-756e-9)/(np.sqrt(2)*15e-9))**2) # Single Gaussian
+# Iltest2=np.exp(-((lam-756e-9)/(np.sqrt(2)*20e-9))**2)+0.75*np.exp(-((lam-800e-9)/(np.sqrt(2)*10e-9))**2)-0.4*np.exp(-((lam-790e-9)/(np.sqrt(2)*15e-9))**2) # Triple Gaussian
 
-if case==1:
-    spectruml=Iltest1
-elif case==2:
-    spectruml=Iltest2
-elif case==3:
+if case==3:
     spectruml=Il
 elif case==4:
     spectruml=Iluv
 elif case==5:
     spectruml=Ilir
 
-f=np.zeros(n)
-spectrum=np.zeros(n)
+if case!=1 and case!=2:
+    f=np.zeros(n)
+    spectrum=np.zeros(n)
 
-for i in range(n):
-    f[n-i-1]=c/(lam[i])
-    spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
+    for i in range(n):
+        f[n-i-1]=c/(lam[i])
+        spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
 
-df=(max(f)-min(f))/n
+    df=(max(f)-min(f))/n
 
 ######## Creating equally spaced frequency domain and spectrum
 
@@ -199,41 +199,43 @@ df=(max(f)-min(f))/n
 
 ###########
 
-t=np.arange(-n/2,n/2)/(n*df)
+    t=np.arange(-n/2,n/2)/(n*df)
 
-pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
+    pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
 
-It=abs(pulse)
+    It=abs(pulse)
 
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-plt.subplot(2,1,1)
-line1,=ax1.plot(lam*1e9,spectruml)
-ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
-ax1.set_ylabel(r'$I\ W/m^2$', fontsize=16)
-ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
+    fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+    plt.subplot(2,1,1)
+    line1,=ax1.plot(lam*1e9,spectruml)
+    ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
+    ax1.set_ylabel(r'$I\ W/m^2$', fontsize=16)
+    ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
 
-major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
-minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
-ax1.set_xticks(major_tick) # Grid
-ax1.set_xticks(minor_tick, minor=True)
-ax1.grid(which='both')
+    major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
+    minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
+    ax1.set_xticks(major_tick) # Grid
+    ax1.set_xticks(minor_tick, minor=True)
+    ax1.grid(which='both')
 
-plt.subplot(2,1,2)
-line2,=ax2.plot(t*1e15,It)
-ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('$I\ W/m^2$', fontsize=16)
-ax2.set_xlim([-100,100])
+    plt.subplot(2,1,2)
+    line2,=ax2.plot(t*1e15,It)
+    ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
+    ax2.set_ylabel('$I\ W/m^2$', fontsize=16)
+    ax2.set_xlim([-100,100])
 
-major_tick = np.arange(-100,100,20)
-minor_tick = np.arange(-100,100,10)
-ax2.set_xticks(major_tick)
-ax2.set_xticks(minor_tick, minor=True)
-ax2.grid(which='both')
+    major_tick = np.arange(-100,100,20)
+    minor_tick = np.arange(-100,100,10)
+    ax2.set_xticks(major_tick)
+    ax2.set_xticks(minor_tick, minor=True)
+    ax2.grid(which='both')
 
-fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
-plt.show()
+    fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
+    plt.show()
 
 ############### Gaussian fit (3 Gaussian functions)
+
+N=5000
 
 if case==3:
 
@@ -241,18 +243,6 @@ if case==3:
     Itt=It[len(t)//2-60:len(t)//2+60]
 
     fit=GaussianFit3(tt,Itt)
-
-# amp2=fit[3]
-# cen2=fit[4]
-# sigma2=fit[5]
-
-# amp3=fit[6]
-# cen3=fit[7]
-# sigma3=fit[8]
-
-# amp1=2*fit[9]
-# cen1=0
-# sigma1=1.37*fit[11] # Had to pick this value so I only use three Gaussians
 
     amp2=0.15*fit[3]
     cen2=2.5*fit[4]
@@ -266,8 +256,6 @@ if case==3:
     cen1=0
     sigma1=1.5*fit[11] # Had to pick this value so I only use three Gaussians
 
-    N=5000
-
     t_fit=np.linspace(5*min(tt),5*max(tt),N)
 
     sigma1=chirping(sigma1,gdd)
@@ -278,30 +266,32 @@ if case==3:
             _1gaussian(t_fit,amp2,cen2,sigma2)+\
             _1gaussian(t_fit,amp3,cen3,sigma3)
     # _1gaussian(t_fit,amp5,cen5,sigma5)
-else:
+elif case!=1 and case!=2:
     tt=t[len(t)//2-200:len(t)//2+200]
     Itt=It[len(t)//2-200:len(t)//2+200]
-    
-    plt.plot(tt,Itt)
-    plt.show()
 
     fit=GaussianFit(tt,Itt)
 
-    amp=fit[0]
-    cen=fit[1]
-    sigma=fit[2]
+    # amp=fit[0]
+    cen=fit[0]
+    sigma=fit[1]
     
-    print(amp)
+    # print(amp)
     print(cen)
     print(sigma)
-
-    N=5000
 
     t_fit=np.linspace(5*min(tt),5*max(tt),N)
 
     sigma=chirping(sigma,gdd)
 
-    It_fit=_1gaussian(t_fit,amp,cen,sigma)
+    It_fit=1/(sigma*(np.sqrt(2*np.pi)))*(np.exp((-1.0/2.0)*(((t_fit-cen)/sigma)**2)))
+    
+    It_fit=max(Itt)*It_fit/max(It_fit)
+else:
+    sigma=T0
+    sigma=chirping(sigma,gdd)
+    t_fit=np.linspace(-50,50,N)*1e-15
+    It_fit=1/(sigma*(np.sqrt(2*np.pi)))*(np.exp((-1.0/2.0)*(((t_fit)/sigma)**2)))
     
 t=t_fit
 It=It_fit
@@ -309,7 +299,7 @@ It=It_fit
 if case==3:
     plt.plot(t_fit*1e15,It_fit,'.')
     
-plt.plot(t,It)
+plt.plot(t*1e15,It)
 # plt.xlim(-20,20)
 plt.xlabel(r'Time $t\ fs$', fontsize=16)
 plt.ylabel('Intensity $I\ W/m^2$', fontsize=16)
@@ -318,7 +308,7 @@ plt.ylabel('Intensity $I\ W/m^2$', fontsize=16)
 # plt.xticks(major_tick)
 # plt.xticks(minor_tick, minor=True)
 plt.grid(which='both')
-plt.legend(["Gaussian fit","Inverse Fourier transform"],loc="upper right")
+# plt.legend(["Gaussian fit","Inverse Fourier transform"],loc="upper right")
 plt.savefig("GaussianFitting.pdf",bbox_inches='tight')
 plt.show()
 
@@ -331,6 +321,7 @@ Squad=S_q(t,Efield)
 fig,(ax1,ax2,ax3)=plt.subplots(3,1,tight_layout=True)
 
 line1,=ax1.plot(t*1e15,Efield,lw=1)
+ax1.plot(t*1e15,np.sqrt(2*It/(c*eps0)),'.',alpha=0.01)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel(r'$E\ V/m$', fontsize=16)
 ax1.set_xlim([-20,20])
