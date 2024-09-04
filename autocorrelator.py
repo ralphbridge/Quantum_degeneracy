@@ -157,6 +157,8 @@ if case!=1 and case!=2:
         spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
 
     df=(max(f)-min(f))/n
+    
+    Ef=np.sqrt(2*spectrum/(c*eps0))
 
 ######## Creating equally spaced frequency domain and spectrum
 
@@ -229,7 +231,7 @@ if case!=1 and case!=2:
     ax2.set_xticks(minor_tick, minor=True)
     ax2.grid(which='both')
 
-    fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
+    # fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
     plt.show()
 
 ############### Gaussian fit (3 Gaussian functions)
@@ -308,7 +310,7 @@ plt.ylabel('Intensity $I\ W/m^2$', fontsize=16)
 # plt.xticks(minor_tick, minor=True)
 plt.grid(which='both')
 # plt.legend(["Gaussian fit","Inverse Fourier transform"],loc="upper right")
-plt.savefig("GaussianFitting.pdf",bbox_inches='tight')
+# plt.savefig("GaussianFitting.pdf",bbox_inches='tight')
 plt.show()
 
 ###############
@@ -337,7 +339,7 @@ ax3.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
 ax3.set_ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
 ax3.set_xlim([-20,20])
 ax3.grid()
-plt.savefig("FieldTrace_chirp.pdf",bbox_inches='tight')
+# plt.savefig("FieldTrace_chirp.pdf",bbox_inches='tight')
 plt.show()
 
 # plt.plot(t_fit*1e15 ,Squad,lw=1)
