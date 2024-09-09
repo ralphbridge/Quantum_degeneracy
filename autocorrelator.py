@@ -15,11 +15,11 @@ T0=FWHM/(2*np.sqrt(2*np.log(2)))
 E00=np.sqrt(2*1e14/(c*eps0))
 
 # gdd=2 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-gdd=1
+gdd=10
 # alpha=1e28 # complex part of the beam parameter Gamma
 alpha=w*gdd*1e-30/T0**3
 
-case=3
+case=1
 
 def E0shift(E0,j):
     Ef=np.zeros(len(E0))
