@@ -1,23 +1,39 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy as scipy
 import math
+import sympy as sym
 
 eps0=8.85e-12
 c=3e8
-lamlaser=756e-9 # laser central wavelength
-k=2*np.pi/lamlaser
-w=2*np.pi*c/lamlaser
-FWHM=8e-15
-T0=FWHM/(2*np.sqrt(2*np.log(2)))
-# T0=FWHM
+lambda0=756e-9 # laser central wavelength
+w0=2*np.pi*c/lambda0
 E00=np.sqrt(2*1e14/(c*eps0))
 
-# gdd=2 # Total GDD [(Air+mirrors+chirped mirrors+FSAC)+glass] in fs^2
-gdd=0
-# alpha=1e28 # complex part of the beam parameter Gamma
-alpha=w*gdd*1e-30/T0**3
+x=sym.Symbol('x')
+
+n_air=1+0.05792105/(238.0185-(1e-12)*(x/(2*np.pi*c))**2)+0.00167917/(57.362-(1e-12)*(x/(2*np.pi*c))**2)
+n_bk7=(1+1.03961212*(1e12)*(2*np.pi*c/x)**2/((1e12)*(2*np.pi*c/x)**2-0.00600069867)+0.231792344*(1e12)*(2*np.pi*c/x)**2/((1e12)*(2*np.pi*c/x)**2-0.0200179144)+1.01046945*(1e12)*(2*np.pi*c/x)**2/((1e12)*(2*np.pi*c/x)**2-103.560653))**0.5
+
+n0_air=n_air.subs(x,w0)
+np0_air=sym.diff(n_air,x).subs(x,w0)
+npp0_air=sym.diff(sym.diff(n_air,x),x).subs(x,w0)
+nppp0_air=sym.diff(sym.diff(sym.diff(n_air,x),x)).subs(x,w0)
+
+k0_air=n0_air*w0/c
+kp0_air=(n0_air+w0*np0_air)/c
+kpp0_air=(2*np0_air+w0*npp0_air)/c
+kppp0_air=(3*npp0_air+w0*nppp0_air)/c
+
+n0_bk7=n_bk7.subs(x,w0)
+np0_bk7=sym.diff(n_bk7,x).subs(x,w0)
+npp0_bk7=sym.diff(sym.diff(n_bk7,x),x).subs(x,w0)
+nppp0_bk7=sym.diff(sym.diff(sym.diff(n_bk7,x),x)).subs(x,w0)
+
+k0_bk7=n0_bk7*w0/c
+kp0_bk7=(n0_bk7+w0*np0_bk7)/c
+kpp0_bk7=(2*np0_bk7+w0*npp0_bk7)/c
+kppp0_bk7=(3*npp0_bk7+w0*nppp0_bk7)/c
 
 def E0shift(E0,j):
     Ef=np.zeros(len(E0))
@@ -84,11 +100,18 @@ df=(max(f)-min(f))/n
 
 ####################################
 
+Ef=np.sqrt(2*spectrum/(c*eps0))
 
+i=0
+
+Em=np.zeros(size(Ef))
+
+for w in 2*np.pi*f:
+    Em[i]=Ef[i]*exp()
+
+spectrum_final=
 
 ####################################
-    
-Ef=np.sqrt(2*spectrum/(c*eps0))
 
 ######## Creating equally spaced frequency domain and spectrum
 
