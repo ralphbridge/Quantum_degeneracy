@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import math
 import sympy as sym
+from scipy import interpolate as inter
 
 eps0=8.85e-12
-c=3e8
+c=299792458
 lambda0=756e-9 # laser central wavelength
 w0=2*np.pi*c/lambda0
 E00=np.sqrt(2*1e14/(c*eps0))
@@ -65,14 +66,13 @@ def S_q(t,E0):
 
 def roundup(x):
     return int(math.ceil(x / 100.0)) * 100
-###############
+
+#################################### Getting measured spectra
 
 S=pd.read_excel("spectrum.xlsx").to_numpy()
 n=np.size(S,0)
 lam=np.zeros(np.size(S,0))
 Il=np.zeros(np.size(S,0))
-Iluv=np.zeros(np.size(S,0))
-Ilir=np.zeros(np.size(S,0))
 
 for j in range(0,np.size(S,1)):
     for i in range (0,np.size(S,0)):
@@ -81,16 +81,10 @@ for j in range(0,np.size(S,1)):
             lam[i]=(S[i][j])*1e-9
         elif j==1:
             Il[i]=S[i][j]
-        elif j==2:
-            Iluv[i]=S[i][j]
-        else:
-            Ilir[i]=S[i][j]
 
 Il=(Il-min(Il))/max(Il)
-Iluv=(Iluv-min(Iluv))/max(Iluv)
-Ilir=(Ilir-min(Ilir))/max(Ilir)
 
-spectruml=Il
+spectruml=Il # Initial measured spectrum
 
 f=np.zeros(n)
 spectrum=np.zeros(n)
@@ -106,9 +100,7 @@ df=(max(f)-min(f))/n
 # n=len(f)
 # df=(max(f)-min(f))/n
 
-####################################
-
-Ef=np.sqrt(2*spectrum/(c*eps0))*(1+0j)
+Ef=np.sqrt(2*spectrum/(c*eps0))*(1+0j) # Initial electric field
 
 # Initial phases for original measured spectrum (up to third order)
 # i=0
@@ -125,9 +117,56 @@ plt.plot(t*1e15,pulse)
 plt.xlim([-20,20])
 plt.show()
 
+########################## Getting GDD data from Thorlabs chirped mirrors data
+
+CM=pd.read_excel("UMxx-15FS_data.xlsx").to_numpy()
+n_cm=np.size(CM,0)
+lam_cm=np.zeros(np.size(CM,0))
+w_cm=np.zeros(np.size(CM,0))
+GD_cm=np.zeros(np.size(CM,0))
+
+for j in range(0,np.size(CM,1)):
+    for i in range (0,np.size(CM,0)):
+        if j==0:
+            lam_cm[i]=(CM[i][j])*1e-9
+            w_cm[i]=2*np.pi*c/((CM[n_cm-1-i][j])*1e-9)
+        else:
+            GD_cm[i]=(CM[i][j])*1e-15
+
+GDD_cm_data=np.zeros(n_cm)
+
+for i in range(0,n_cm):
+    if i==0:
+        m2=(GD_cm[i+1]-GD_cm[i])/(w_cm[i+1]-w_cm[i])
+        GDD_cm_data[i]=m2
+    elif i==n_cm-1:
+        m1=(GD_cm[i]-GD_cm[i-1])/(w_cm[i]-w_cm[i-1])
+        GDD_cm_data[i]=m1
+    else:
+        m1=(GD_cm[i]-GD_cm[i-1])/(w_cm[i]-w_cm[i-1])
+        m2=(GD_cm[i+1]-GD_cm[i])/(w_cm[i+1]-w_cm[i])
+        GDD_cm_data[i]=(m1+m2)/2
+
+GDD_cm_interp=inter.interp1d(w_cm,GDD_cm_data)
+GDD_cm=np.zeros(n)
+
+# i=0
+# for w in 2*np.pi*f:
+#     GDD_cm[i]=GDD_cm_interp(w)
+#     i+=1
+
+plt.plot(w_cm,GDD_cm_data*1e30)
+plt.xlim([2e15,3e15])
+plt.ylim([-100,200])
+plt.grid()
+plt.show()
+
+print(GDD_cm_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
+
+############################## Computing the phases due to each element in the layout
+
 Em=np.zeros(np.size(Ef),dtype=np.complex_)
 
-# Computing the phases due to each element in the layout
 i=0
 for w in 2*np.pi*f:
     # Dispersion phases introduced by air up to the third order
@@ -233,35 +272,6 @@ N=5000
 tt=t[len(t)//2-60:len(t)//2+60]
 Itt=It[len(t)//2-60:len(t)//2+60]
 
-fit=GaussianFit3(tt,Itt)
-
-amp2=0.23*fit[3]
-cen2=1.5*fit[4]
-sigma2=0.5*fit[5]
-
-amp3=0.23*fit[6]
-cen3=1.5*fit[7]
-sigma3=0.5*fit[8]
-
-amp1=2.5*fit[9]
-cen1=0
-sigma1=1.5*fit[11] # Had to pick this value so I only use three Gaussians
-
-t_fit=np.linspace(5*min(tt),5*max(tt),N)
-
-sigma1=chirping(sigma1,gdd*1e-30)
-sigma2=chirping(sigma2,gdd*1e-30)
-sigma3=chirping(sigma3,gdd*1e-30)
-
-It_fit=_1gaussian(t_fit,amp1,cen1,sigma1)+\
-    _1gaussian(t_fit,amp2,cen2,sigma2)+\
-    _1gaussian(t_fit,amp3,cen3,sigma3)
-    # _1gaussian(t_fit,amp5,cen5,sigma5)
-    
-t=t_fit
-It=It_fit
-
-plt.plot(t_fit*1e15,It_fit,'.')
 plt.plot(t*1e15,It)
 # plt.xlim(-20,20)
 plt.xlabel(r'Time $t\ fs$', fontsize=16)
