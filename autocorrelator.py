@@ -10,6 +10,9 @@ lambda0=756e-9 # laser central wavelength
 w0=2*np.pi*c/lambda0
 E00=np.sqrt(2*1e14/(c*eps0))
 
+zd=2
+zw=3e-3
+
 x=sym.Symbol('x')
 
 n_air=1+0.05792105/(238.0185-(1e-12)*(x/(2*np.pi*c))**2)+0.00167917/(57.362-(1e-12)*(x/(2*np.pi*c))**2)
@@ -20,20 +23,20 @@ np0_air=sym.diff(n_air,x).subs(x,w0)
 npp0_air=sym.diff(sym.diff(n_air,x),x).subs(x,w0)
 nppp0_air=sym.diff(sym.diff(sym.diff(n_air,x),x)).subs(x,w0)
 
-k0_air=n0_air*w0/c
-kp0_air=(n0_air+w0*np0_air)/c
-kpp0_air=(2*np0_air+w0*npp0_air)/c
-kppp0_air=(3*npp0_air+w0*nppp0_air)/c
+k0_air=float(n0_air*w0/c)
+kp0_air=float((n0_air+w0*np0_air)/c)
+kpp0_air=float((2*np0_air+w0*npp0_air)/c)
+kppp0_air=float((3*npp0_air+w0*nppp0_air)/c)
 
 n0_bk7=n_bk7.subs(x,w0)
 np0_bk7=sym.diff(n_bk7,x).subs(x,w0)
 npp0_bk7=sym.diff(sym.diff(n_bk7,x),x).subs(x,w0)
 nppp0_bk7=sym.diff(sym.diff(sym.diff(n_bk7,x),x)).subs(x,w0)
 
-k0_bk7=n0_bk7*w0/c
-kp0_bk7=(n0_bk7+w0*np0_bk7)/c
-kpp0_bk7=(2*np0_bk7+w0*npp0_bk7)/c
-kppp0_bk7=(3*npp0_bk7+w0*nppp0_bk7)/c
+k0_bk7=float(n0_bk7*w0/c)
+kp0_bk7=float((n0_bk7+w0*np0_bk7)/c)
+kpp0_bk7=float((2*np0_bk7+w0*npp0_bk7)/c)
+kppp0_bk7=float((3*npp0_bk7+w0*nppp0_bk7)/c)
 
 def E0shift(E0,j):
     Ef=np.zeros(len(E0))
@@ -95,21 +98,59 @@ spectrum=np.zeros(n)
 for i in range(n):
     f[n-i-1]=c/(lam[i])
     spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
-
+    
 df=(max(f)-min(f))/n
+
+# f=np.append(f,np.linspace(max(f)+df,3*(max(f)+max(f)-min(f)),3*n))
+# spectrum=np.append(spectrum,np.zeros(3*n))
+# n=len(f)
+# df=(max(f)-min(f))/n
 
 ####################################
 
-Ef=np.sqrt(2*spectrum/(c*eps0))
+Ef=np.sqrt(2*spectrum/(c*eps0))*(1+0j)
 
+# Initial phases for original measured spectrum (up to third order)
+# i=0
+# for w in 2*np.pi*f:
+#     Ef[i]=Ef[i]*np.exp(1j*GDD_laser[i]*(w-w0)**2/math.factorial(2))
+#     Ef[i]=Ef[i]*np.exp(1j*TOD_laser[i]*(w-w0)**3/math.factorial(3))
+    
+#     i+=1
+    
+t=np.arange(-n/2,n/2)/(n*df)
+pulse=np.fft.ifftshift(np.fft.ifft(Ef))
+
+plt.plot(t*1e15,pulse)
+plt.xlim([-20,20])
+plt.show()
+
+Em=np.zeros(np.size(Ef),dtype=np.complex_)
+
+# Computing the phases due to each element in the layout
 i=0
-
-Em=np.zeros(size(Ef))
-
 for w in 2*np.pi*f:
-    Em[i]=Ef[i]*exp()
+    # Dispersion phases introduced by air up to the third order
+    Em[i]=Ef[i]*np.exp(1j*kp0_air*zd)*np.exp(1j*kp0_air*(w-w0)*zd)
+    Em[i]=Em[i]*np.exp(1j*kpp0_air*(w-w0)**2*zd/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*kppp0_air*(w-w0)**3*zd/math.factorial(3))
+    
+    # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
+    Em[i]=Em[i]*np.exp(1j*kp0_bk7*zd)*np.exp(1j*kp0_bk7*(w-w0)*zw)
+    Em[i]=Em[i]*np.exp(1j*kpp0_bk7*(w-w0)**2*zw/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*kppp0_bk7*(w-w0)**3*zw/math.factorial(3))
+    
+    # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
+    Em[i]=Em[i]*np.exp(1j*GDD_p01m*(w-w0)**2/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*TOD_p01m*(w-w0)**3/math.factorial(3))
+    
+    # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
+    Em[i]=Em[i]*np.exp(1j*GDD_cm[i]*(w-w0)**2/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*TOD_cm[i]*(w-w0)**3/math.factorial(3))
+    
+    i+=1
 
-spectrum_final=
+spectrum_final=1
 
 ####################################
 
@@ -153,11 +194,9 @@ spectrum_final=
 
 ###########
 
-t=np.arange(-n/2,n/2)/(n*df)
+# pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
 
-pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
-
-It=abs(pulse)
+# It=abs(pulse)
 
 fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
