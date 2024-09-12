@@ -94,6 +94,7 @@ for i in range(n):
     spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
     
 df=(max(f)-min(f))/n
+w=2*np.pi*f
 
 # f=np.append(f,np.linspace(max(f)+df,3*(max(f)+max(f)-min(f)),3*n))
 # spectrum=np.append(spectrum,np.zeros(3*n))
@@ -134,7 +135,6 @@ for j in range(0,np.size(CM,1)):
             GD_cm[i]=(CM[i][j])*1e-15
 
 GDD_cm_data=np.zeros(n_cm)
-
 for i in range(0,n_cm):
     if i==0:
         m2=(GD_cm[i+1]-GD_cm[i])/(w_cm[i+1]-w_cm[i])
@@ -147,56 +147,123 @@ for i in range(0,n_cm):
         m2=(GD_cm[i+1]-GD_cm[i])/(w_cm[i+1]-w_cm[i])
         GDD_cm_data[i]=(m1+m2)/2
 
-GDD_cm_interp=inter.interp1d(w_cm,GDD_cm_data)
+GDD_cm_interp=inter.CubicSpline(w_cm,GDD_cm_data)
 GDD_cm=np.zeros(n)
+        
+TOD_cm_data=np.zeros(n_cm)
+for i in range(0,n_cm):
+    if i==0:
+        m2=(GDD_cm_data[i+1]-GDD_cm_data[i])/(w_cm[i+1]-w_cm[i])
+        TOD_cm_data[i]=m2
+    elif i==n_cm-1:
+        m1=(GDD_cm_data[i]-GDD_cm_data[i-1])/(w_cm[i]-w_cm[i-1])
+        TOD_cm_data[i]=m1
+    else:
+        m1=(GDD_cm_data[i]-GDD_cm_data[i-1])/(w_cm[i]-w_cm[i-1])
+        m2=(GDD_cm_data[i+1]-GDD_cm_data[i])/(w_cm[i+1]-w_cm[i])
+        TOD_cm_data[i]=(m1+m2)/2
 
-# i=0
-# for w in 2*np.pi*f:
-#     GDD_cm[i]=GDD_cm_interp(w)
-#     i+=1
+TOD_cm_interp=inter.CubicSpline(w_cm,GDD_cm_data)
+TOD_cm=np.zeros(n)
 
-plt.plot(w_cm,GDD_cm_data*1e30)
+# plt.plot(w_cm,GDD_cm_data*1e30)
+# plt.xlim([2e15,3e15])
+# plt.ylim([-100,300])
+# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
+# plt.ylabel(r'GDD $fs^2$', fontsize=16)
+# plt.grid()
+# plt.show()
+
+#print(GDD_cm_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
+GDD_cm=np.zeros(np.size(f))
+TOD_cm=np.zeros(np.size(f))
+for i in range(0,len(f)):
+    GDD_cm[i]=GDD_cm_interp(w[i])
+    TOD_cm[i]=TOD_cm_interp(w[i])
+
+# plt.plot(2*np.pi*f,GDD_cm*1e30)
+# plt.xlim([2e15,3e15])
+# plt.ylim([-100,300])
+# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
+# plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
+# plt.grid()
+# plt.show()
+
+########################## Getting GDD data from Thorlabs P01 mirrors data
+
+P01=pd.read_excel("P01_data.xlsx").to_numpy()
+n_p01=np.size(P01,0)
+lam_p01=np.zeros(np.size(P01,0))
+w_p01=np.zeros(np.size(P01,0))
+GDD_p01_data=np.zeros(np.size(P01,0))
+
+for j in range(0,np.size(P01,1)):
+    for i in range (0,np.size(P01,0)):
+        if j==0:
+            lam_p01[i]=(P01[i][j])*1e-9
+            w_p01[i]=2*np.pi*c/((P01[n_p01-1-i][j])*1e-9)
+        else:
+            GDD_p01_data[i]=(P01[i][j])*1e-30
+
+GDD_p01_interp=inter.CubicSpline(w_p01,GDD_p01_data)
+
+TOD_p01_data=np.zeros(n_p01)
+for i in range(0,n_p01):
+    if i==0:
+        m2=(GDD_p01_data[i+1]-GDD_p01_data[i])/(w_p01[i+1]-w_p01[i])
+        TOD_p01_data[i]=m2
+    elif i==n_p01-1:
+        m1=(GDD_p01_data[i]-GDD_p01_data[i-1])/(w_p01[i]-w_p01[i-1])
+        TOD_p01_data[i]=m1
+    else:
+        m1=(GDD_p01_data[i]-GDD_p01_data[i-1])/(w_p01[i]-w_p01[i-1])
+        m2=(GDD_p01_data[i+1]-GDD_p01_data[i])/(w_p01[i+1]-w_p01[i])
+        TOD_p01_data[i]=(m1+m2)/2
+
+TOD_p01_interp=inter.CubicSpline(w_p01,GDD_p01_data)
+TOD_p01=np.zeros(n)
+
+#print(GDD_p01_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
+GDD_p01=np.zeros(np.size(f))
+TOD_p01=np.zeros(np.size(f))
+for i in range(0,len(f)):
+    GDD_p01[i]=GDD_p01_interp(w[i])
+    TOD_p01[i]=TOD_p01_interp(w[i])
+
+plt.plot(2*np.pi*f,GDD_p01*1e30)
 plt.xlim([2e15,3e15])
-plt.ylim([-100,200])
+# plt.ylim([-100,300])
+plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
+plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
 plt.grid()
 plt.show()
-
-print(GDD_cm_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
 
 ############################## Computing the phases due to each element in the layout
 
 Em=np.zeros(np.size(Ef),dtype=np.complex_)
 
-i=0
-for w in 2*np.pi*f:
+for i in range(0,len(w)):
     # Dispersion phases introduced by air up to the third order
-    Em[i]=Ef[i]*np.exp(1j*kp0_air*zd)*np.exp(1j*kp0_air*(w-w0)*zd)
-    Em[i]=Em[i]*np.exp(1j*kpp0_air*(w-w0)**2*zd/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*kppp0_air*(w-w0)**3*zd/math.factorial(3))
+    Em[i]=Ef[i]*np.exp(1j*kp0_air*zd)*np.exp(1j*kp0_air*(w[i]-w0)*zd)
+    Em[i]=Em[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
     
     # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
-    Em[i]=Em[i]*np.exp(1j*kp0_bk7*zd)*np.exp(1j*kp0_bk7*(w-w0)*zw)
-    Em[i]=Em[i]*np.exp(1j*kpp0_bk7*(w-w0)**2*zw/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*kppp0_bk7*(w-w0)**3*zw/math.factorial(3))
-    
-    # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
-    Em[i]=Em[i]*np.exp(1j*GDD_p01m*(w-w0)**2/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*TOD_p01m*(w-w0)**3/math.factorial(3))
+    Em[i]=Em[i]*np.exp(1j*kp0_bk7*zd)*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
+    Em[i]=Em[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
     
     # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
-    Em[i]=Em[i]*np.exp(1j*GDD_cm[i]*(w-w0)**2/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*TOD_cm[i]*(w-w0)**3/math.factorial(3))
+    Em[i]=Em[i]*np.exp(1j*GDD_cm[i]*(w[i]-w0)**2/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*TOD_cm[i]*(w[i]-w0)**3/math.factorial(3))
     
-    i+=1
-
-spectrum_final=1
+    # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
+    Em[i]=Em[i]*np.exp(1j*GDD_p01*(w[i]-w0)**2/math.factorial(2))
+    Em[i]=Em[i]*np.exp(1j*TOD_p01*(w[i]-w0)**3/math.factorial(3))
 
 ####################################
 
 ######## Creating equally spaced frequency domain and spectrum
-
-# dfmax=0
-# dfmin=df
 
 # for i in range(n-1):
 #     if f[i+1]-f[i]>dfmax:
