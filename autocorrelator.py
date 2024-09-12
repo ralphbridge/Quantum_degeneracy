@@ -82,41 +82,58 @@ for j in range(0,np.size(S,1)):
         elif j==1:
             Il[i]=S[i][j]
 
-Il=(Il-min(Il))/max(Il)
-
-spectruml=Il # Initial measured spectrum
+Il=(Il-min(Il))/max(Il) # Initial measured spectrum
 
 f=np.zeros(n)
 spectrum=np.zeros(n)
 
 for i in range(n):
     f[n-i-1]=c/(lam[i])
-    spectrum[n-i-1]=(lam[i]**2)*spectruml[i]/c
+    spectrum[n-i-1]=(lam[i]**2)*Il[i]/c
     
-df=(max(f)-min(f))/n
+fs=max(f)-min(f) # Sampling frequency (equals the bandwidth or maximum frequency)
+t0=np.arange(-n/2,n/2)/fs
+Et0=np.fft.ifftshift(np.fft.ifft(np.sqrt(2*spectrum/(c*eps0)))) # Initial electric field spectrum
+
+########################## Trimming spectrum low and high frequencies and interpolating it to get equally spaced frequencies
+
+N=799 # Length of actual spectrum (obtained from matlab)
+w=np.zeros(N)
+nn=len(w)
+spectrumw=np.zeros(nn)
+
+for i in range(0,nn):
+    w[i]=2*np.pi*f[i+266] # 266 is the position of the original spectrum where it starts being bigger than 0
+    spectrumw[i]=spectrum[i+266]
+    
+spectrumw_interp_function=inter.CubicSpline(w,spectrumw)
+
+del f
+f=np.linspace(min(w)/(2*np.pi),max(w)/(2*np.pi),N)
+spectrumw_interp=np.zeros(N)
+
+del w
 w=2*np.pi*f
 
-# f=np.append(f,np.linspace(max(f)+df,3*(max(f)+max(f)-min(f)),3*n))
-# spectrum=np.append(spectrum,np.zeros(3*n))
-# n=len(f)
-# df=(max(f)-min(f))/n
+for i in range(N):
+    if i==0 or i==N:
+        spectrumw_interp[i]=spectrumw[i]
+    else:
+        spectrumw_interp[i]=spectrumw_interp_function(2*np.pi*f[i])
+        if spectrumw_interp[i]<0:
+            spectrumw_interp[i]=0
+        
+plt.plot(2*np.pi*f,spectrumw_interp)
+plt.show()
 
-Ef=np.sqrt(2*spectrum/(c*eps0))*(1+0j) # Initial electric field
+Ef0=np.sqrt(2*spectrumw_interp/(c*eps0))*(1+0j) # Initial electric field spectrum with trimmed spectrum
 
 # Initial phases for original measured spectrum (up to third order)
 # i=0
 # for w in 2*np.pi*f:
-#     Ef[i]=Ef[i]*np.exp(1j*GDD_laser[i]*(w-w0)**2/math.factorial(2))
-#     Ef[i]=Ef[i]*np.exp(1j*TOD_laser[i]*(w-w0)**3/math.factorial(3))
-    
+#     Ef0[i]=Ef0[i]*np.exp(1j*GDD_laser[i]*(w-w0)**2/math.factorial(2))
+#     Ef0[i]=Ef0[i]*np.exp(1j*TOD_laser[i]*(w-w0)**3/math.factorial(3))
 #     i+=1
-    
-t=np.arange(-n/2,n/2)/(n*df)
-pulse=np.fft.ifftshift(np.fft.ifft(Ef))
-
-plt.plot(t*1e15,pulse)
-plt.xlim([-20,20])
-plt.show()
 
 ########################## Getting GDD data from Thorlabs chirped mirrors data
 
@@ -148,7 +165,7 @@ for i in range(0,n_cm):
         GDD_cm_data[i]=(m1+m2)/2
 
 GDD_cm_interp=inter.CubicSpline(w_cm,GDD_cm_data)
-GDD_cm=np.zeros(n)
+GDD_cm=np.zeros(nn)
         
 TOD_cm_data=np.zeros(n_cm)
 for i in range(0,n_cm):
@@ -164,7 +181,7 @@ for i in range(0,n_cm):
         TOD_cm_data[i]=(m1+m2)/2
 
 TOD_cm_interp=inter.CubicSpline(w_cm,GDD_cm_data)
-TOD_cm=np.zeros(n)
+TOD_cm=np.zeros(nn)
 
 # plt.plot(w_cm,GDD_cm_data*1e30)
 # plt.xlim([2e15,3e15])
@@ -181,13 +198,13 @@ for i in range(0,len(f)):
     GDD_cm[i]=GDD_cm_interp(w[i])
     TOD_cm[i]=TOD_cm_interp(w[i])
 
-# plt.plot(2*np.pi*f,GDD_cm*1e30)
-# plt.xlim([2e15,3e15])
-# plt.ylim([-100,300])
-# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
-# plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
-# plt.grid()
-# plt.show()
+plt.plot(2*np.pi*f,GDD_cm*1e30)
+plt.xlim([2e15,3e15])
+plt.ylim([-100,300])
+plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
+plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
+plt.grid()
+plt.show()
 
 ########################## Getting GDD data from Thorlabs P01 mirrors data
 
@@ -221,7 +238,7 @@ for i in range(0,n_p01):
         TOD_p01_data[i]=(m1+m2)/2
 
 TOD_p01_interp=inter.CubicSpline(w_p01,GDD_p01_data)
-TOD_p01=np.zeros(n)
+TOD_p01=np.zeros(nn)
 
 #print(GDD_p01_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
 GDD_p01=np.zeros(np.size(f))
@@ -230,97 +247,80 @@ for i in range(0,len(f)):
     GDD_p01[i]=GDD_p01_interp(w[i])
     TOD_p01[i]=TOD_p01_interp(w[i])
 
-plt.plot(2*np.pi*f,GDD_p01*1e30)
-plt.xlim([2e15,3e15])
-# plt.ylim([-100,300])
-plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
-plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
-plt.grid()
-plt.show()
+# plt.plot(2*np.pi*f,GDD_p01*1e30)
+# plt.xlim([2e15,3e15])
+# # plt.ylim([-100,300])
+# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
+# plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
+# plt.grid()
+# plt.show()
 
 ############################## Computing the phases due to each element in the layout
 
-Em=np.zeros(np.size(Ef),dtype=np.complex_)
+Ef=np.zeros(np.size(Ef0),dtype=np.complex_)
 
-for i in range(0,len(w)):
+for i in range(0,len(f)):
     # Dispersion phases introduced by air up to the third order
-    Em[i]=Ef[i]*np.exp(1j*kp0_air*zd)*np.exp(1j*kp0_air*(w[i]-w0)*zd)
-    Em[i]=Em[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
+    Ef[i]=Ef0[i]*np.exp(1j*kp0_air*zd)
+    # Ef[i]=Ef[i]np.exp(1j*kp0_air*(w[i]-w0)*zd)
+    # Ef[i]=Ef[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
+    # Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
     
     # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
-    Em[i]=Em[i]*np.exp(1j*kp0_bk7*zd)*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
-    Em[i]=Em[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
+    Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*zd)
+    # Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
+    # Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
+    # Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
     
-    # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
-    Em[i]=Em[i]*np.exp(1j*GDD_cm[i]*(w[i]-w0)**2/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*TOD_cm[i]*(w[i]-w0)**3/math.factorial(3))
+    # # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
+    # Ef[i]=Ef[i]*np.exp(1j*GDD_cm[i]*(w[i]-w0)**2/math.factorial(2))
+    # Ef[i]=Ef[i]*np.exp(1j*TOD_cm[i]*(w[i]-w0)**3/math.factorial(3))
     
-    # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
-    Em[i]=Em[i]*np.exp(1j*GDD_p01*(w[i]-w0)**2/math.factorial(2))
-    Em[i]=Em[i]*np.exp(1j*TOD_p01*(w[i]-w0)**3/math.factorial(3))
+    # # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
+    # Ef[i]=Ef[i]*np.exp(1j*GDD_p01[i]*(w[i]-w0)**2/math.factorial(2))
+    # Ef[i]=Ef[i]*np.exp(1j*TOD_p01[i]*(w[i]-w0)**3/math.factorial(3))
 
-####################################
+######################## Increasing time resolution (by increasing frequency range) by 3^N <--------- DOES NOT WORK
 
-######## Creating equally spaced frequency domain and spectrum
+# NN=0
+# df=f[1]-f[0]
 
-# for i in range(n-1):
-#     if f[i+1]-f[i]>dfmax:
-#         dfmax=f[i+1]-f[i]
-#     elif f[i+1]-f[i]<dfmin:
-#         dfmin=f[i+1]-f[i]
-
-# df=df
-
-# ftemp=np.arange(min(f),max(f),df)
-
-# n=len(ftemp)
-# spectrumtemp=np.zeros(n)
-
-# spectrum_interp=inter.interp1d(f,spectrum)
-# # spectrum_interp=inter.UnivariateSpline(f,spectrum)
-
-# for i in range(n):
-#     spectrumtemp[i]=spectrum_interp(ftemp[i])
-
-# f=ftemp
-# spectrum=spectrumtemp
-
-# del ftemp, spectrumtemp
-
-# ########## Increasing time resolution (by increasing frequency range) by 3^N
-
-# N=1
-
-# for i in range(N):
+# for i in range(NN):
 #     f=np.append(np.append(np.arange(min(f)-n*df,min(f),df),f),np.arange(max(f)+df,max(f)+(n+1)*df,df))
-#     spectrum=np.append(np.append(np.zeros(n),spectrum),np.zeros(n))
-#     n=len(f)
+#     Ef=np.append(np.append(np.zeros(n),Ef),np.zeros(n))
+#     N=len(f)
 
-###########
+NN=1000
+df=f[1]-f[0]
+f=np.append(f,np.linspace(max(f)+df,max(f)+NN*df,NN))
+Ef=np.append(Ef,np.zeros(NN))
 
-# pulse=np.fft.ifftshift(np.fft.ifft(spectrum))
+N=len(f)
 
-# It=abs(pulse)
+##################################################
+
+fs=max(f)-min(f) # Sampling frequency (equals the bandwidth or maximum frequency)
+t=np.arange(-N/2,N/2)/fs
+
+Et=np.fft.ifftshift(np.fft.ifft(Ef))
 
 fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
-line1,=ax1.plot(lam*1e9,spectruml)
-ax1.set_xlabel(r'Wavelength $\lambda\ nm$', fontsize=16)
-ax1.set_ylabel(r'$I\ W/m^2$', fontsize=16)
-ax1.set_xlim([min(lam)*1e9,max(lam)*1e9])
+line1,=plt.plot(t0*1e15,Et0)
+ax1.set_xlim([-20,20])
+ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
 
-major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
-minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
-ax1.set_xticks(major_tick) # Grid
-ax1.set_xticks(minor_tick, minor=True)
+# major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
+# minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
+# ax1.set_xticks(major_tick) # Grid
+# ax1.set_xticks(minor_tick, minor=True)
 ax1.grid(which='both')
 
 plt.subplot(2,1,2)
-line2,=ax2.plot(t*1e15,It)
+line2,=ax2.plot(t*1e15,Et)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('$I\ W/m^2$', fontsize=16)
+ax2.set_ylabel('$E\ V/m$', fontsize=16)
 ax2.set_xlim([-100,100])
 
 major_tick = np.arange(-100,100,20)
@@ -332,36 +332,15 @@ ax2.grid(which='both')
 # fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
 plt.show()
 
-############### Gaussian fit (3 Gaussian functions)
-
-N=5000
-
-tt=t[len(t)//2-60:len(t)//2+60]
-Itt=It[len(t)//2-60:len(t)//2+60]
-
-plt.plot(t*1e15,It)
-# plt.xlim(-20,20)
-plt.xlabel(r'Time $t\ fs$', fontsize=16)
-plt.ylabel('Intensity $I\ W/m^2$', fontsize=16)
-# major_tick = np.arange(-100,100,20)
-# minor_tick = np.arange(-100,100,10)
-# plt.xticks(major_tick)
-# plt.xticks(minor_tick, minor=True)
-plt.grid(which='both')
-# plt.legend(["Gaussian fit","Inverse Fourier transform"],loc="upper right")
-# plt.savefig("GaussianFitting.pdf",bbox_inches='tight')
-plt.show()
-
 ###############
 
-Efield=np.sqrt(2*It/(c*eps0))*np.cos(w*t+alpha*t**2)
-Slinear=S_l(t,Efield)
-Squad=S_q(t,Efield)
+Slinear=S_l(t,Et)
+Squad=S_q(t,Et)
 
 fig,(ax1,ax3)=plt.subplots(2,1,tight_layout=True)
 
-line1,=ax1.plot(t*1e15,Efield,lw=1)
-ax1.plot(t*1e15,np.sqrt(2*It/(c*eps0)),'.',alpha=0.01)
+line1,=ax1.plot(t*1e15,Et,lw=1)
+ax1.plot(t*1e15,Et,'.',alpha=0.01)
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel(r'$E\ V/m$', fontsize=16)
 ax1.set_xlim([-50,50])
