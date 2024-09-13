@@ -147,9 +147,9 @@ for j in range(0,np.size(CM,1)):
     for i in range (0,np.size(CM,0)):
         if j==0:
             lam_cm[i]=(CM[i][j])*1e-9
-            w_cm[i]=2*np.pi*c/((CM[n_cm-1-i][j])*1e-9)
+            w_cm[n_cm-i-1]=2*np.pi*c/((CM[i][j])*1e-9)
         else:
-            GD_cm[i]=(CM[i][j])*1e-15
+            GD_cm[n_cm-i-1]=(CM[i][j])*1e-15
 
 GDD_cm_data=np.zeros(n_cm)
 for i in range(0,n_cm):
@@ -200,7 +200,7 @@ for i in range(0,len(f)):
 
 plt.plot(2*np.pi*f,GDD_cm*1e30)
 plt.xlim([2e15,3e15])
-plt.ylim([-100,300])
+plt.ylim([-300,100])
 plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
 plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
 plt.grid()
@@ -218,9 +218,9 @@ for j in range(0,np.size(P01,1)):
     for i in range (0,np.size(P01,0)):
         if j==0:
             lam_p01[i]=(P01[i][j])*1e-9
-            w_p01[i]=2*np.pi*c/((P01[n_p01-1-i][j])*1e-9)
+            w_p01[n_p01-1-i]=2*np.pi*c/((P01[i][j])*1e-9)
         else:
-            GDD_p01_data[i]=(P01[i][j])*1e-30
+            GDD_p01_data[n_p01-1-i]=(P01[i][j])*1e-30
 
 GDD_p01_interp=inter.CubicSpline(w_p01,GDD_p01_data)
 
