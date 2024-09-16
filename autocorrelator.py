@@ -97,34 +97,34 @@ Et0=np.fft.ifftshift(np.fft.ifft(np.sqrt(2*spectrum/(c*eps0)))) # Initial electr
 
 ########################## Trimming spectrum low and high frequencies and interpolating it to get equally spaced frequencies
 
-N=799 # Length of actual spectrum (obtained from matlab)
-w=np.zeros(N)
-nn=len(w)
-spectrumw=np.zeros(nn)
+NN=799 # Length of actual spectrum (obtained from matlab)
+w=np.zeros(NN)
+spectrumw=np.zeros(NN)
 
-for i in range(0,nn):
+for i in range(0,NN):
     w[i]=2*np.pi*f[i+266] # 266 is the position of the original spectrum where it starts being bigger than 0
     spectrumw[i]=spectrum[i+266]
     
 spectrumw_interp_function=inter.CubicSpline(w,spectrumw)
 
 del f
+N=1500
 f=np.linspace(min(w)/(2*np.pi),max(w)/(2*np.pi),N)
 spectrumw_interp=np.zeros(N)
+df=f[1]-f[0]
 
 del w
 w=2*np.pi*f
 
 for i in range(N):
-    if i==0 or i==N:
+    if i==0:
         spectrumw_interp[i]=spectrumw[i]
+    elif i==N-1:
+        spectrumw_interp[i]=spectrumw[NN-1]
     else:
         spectrumw_interp[i]=spectrumw_interp_function(2*np.pi*f[i])
         if spectrumw_interp[i]<0:
             spectrumw_interp[i]=0
-        
-plt.plot(2*np.pi*f,spectrumw_interp)
-plt.show()
 
 Ef0=np.sqrt(2*spectrumw_interp/(c*eps0))*(1+0j) # Initial electric field spectrum with trimmed spectrum
 
@@ -139,49 +139,44 @@ Ef0=np.sqrt(2*spectrumw_interp/(c*eps0))*(1+0j) # Initial electric field spectru
 
 CM=pd.read_excel("UMxx-15FS_data.xlsx").to_numpy()
 n_cm=np.size(CM,0)
-lam_cm=np.zeros(np.size(CM,0))
-w_cm=np.zeros(np.size(CM,0))
-GD_cm=np.zeros(np.size(CM,0))
+lam_cm=np.zeros(n_cm)
+GD_cm_lam=np.zeros(n_cm)
 
-for j in range(0,np.size(CM,1)):
-    for i in range (0,np.size(CM,0)):
+for j in range(np.size(CM,1)):
+    for i in range (np.size(CM,0)):
         if j==0:
             lam_cm[i]=(CM[i][j])*1e-9
-            w_cm[n_cm-i-1]=2*np.pi*c/((CM[i][j])*1e-9)
         else:
-            GD_cm[n_cm-i-1]=(CM[i][j])*1e-15
+            GD_cm_lam[i]=(CM[i][j])*1e-15
 
-GDD_cm_data=np.zeros(n_cm)
-for i in range(0,n_cm):
+plt.plot(lam_cm,GD_cm_lam)
+plt.xlabel('wavelength')
+plt.show()
+
+w_cm=np.zeros(n_cm)
+GD_cm=np.zeros(n_cm)
+for i in range(n_cm):
+    w_cm[n_cm-1-i]=2*np.pi*c/lam_cm[i]
+    GD_cm[n_cm-1-i]=GD_cm_lam[i]
+
+GD_cm_interp_function=inter.CubicSpline(w_cm,GD_cm)
+GD_cm_interp=GD_cm_interp_function(w)
+
+GDD_cm=np.zeros(N)
+TOD_cm=np.zeros(N)
+for i in range(N): # Higher accuracy order derivatives from Fornberg 1988
     if i==0:
-        m2=(GD_cm[i+1]-GD_cm[i])/(w_cm[i+1]-w_cm[i])
-        GDD_cm_data[i]=m2
-    elif i==n_cm-1:
-        m1=(GD_cm[i]-GD_cm[i-1])/(w_cm[i]-w_cm[i-1])
-        GDD_cm_data[i]=m1
+        m2=(GD_cm_interp[i+1]-GD_cm_interp[i])/(w[i+1]-w[i])
+        GDD_cm[i]=m2
+    elif i==N-1:
+        m1=(GD_cm_interp[i]-GD_cm_interp[i-1])/(w[i]-w[i-1])
+        GDD_cm[i]=m1
+    elif i==1 or i==N-2:
+        GDD_cm[i]=(-GD_cm_interp[i-1]+GD_cm_interp[i+1])/(2*df)
+        TOD_cm[i]=(GD_cm_interp[i-1]-2*GD_cm_interp[i]+GD_cm_interp[i+1])/(df**2)
     else:
-        m1=(GD_cm[i]-GD_cm[i-1])/(w_cm[i]-w_cm[i-1])
-        m2=(GD_cm[i+1]-GD_cm[i])/(w_cm[i+1]-w_cm[i])
-        GDD_cm_data[i]=(m1+m2)/2
-
-GDD_cm_interp=inter.CubicSpline(w_cm,GDD_cm_data)
-GDD_cm=np.zeros(nn)
-        
-TOD_cm_data=np.zeros(n_cm)
-for i in range(0,n_cm):
-    if i==0:
-        m2=(GDD_cm_data[i+1]-GDD_cm_data[i])/(w_cm[i+1]-w_cm[i])
-        TOD_cm_data[i]=m2
-    elif i==n_cm-1:
-        m1=(GDD_cm_data[i]-GDD_cm_data[i-1])/(w_cm[i]-w_cm[i-1])
-        TOD_cm_data[i]=m1
-    else:
-        m1=(GDD_cm_data[i]-GDD_cm_data[i-1])/(w_cm[i]-w_cm[i-1])
-        m2=(GDD_cm_data[i+1]-GDD_cm_data[i])/(w_cm[i+1]-w_cm[i])
-        TOD_cm_data[i]=(m1+m2)/2
-
-TOD_cm_interp=inter.CubicSpline(w_cm,GDD_cm_data)
-TOD_cm=np.zeros(nn)
+        GDD_cm[i]=(GD_cm_interp[i-2]-8*GD_cm_interp[i-1]+8*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*df)
+        TOD_cm[i]=(-GD_cm_interp[i-2]+16*GD_cm_interp[i-1]-30*GD_cm_interp[i]+16*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*df**2)
 
 # plt.plot(w_cm,GDD_cm_data*1e30)
 # plt.xlim([2e15,3e15])
@@ -191,16 +186,8 @@ TOD_cm=np.zeros(nn)
 # plt.grid()
 # plt.show()
 
-#print(GDD_cm_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
-GDD_cm=np.zeros(np.size(f))
-TOD_cm=np.zeros(np.size(f))
-for i in range(0,len(f)):
-    GDD_cm[i]=GDD_cm_interp(w[i])
-    TOD_cm[i]=TOD_cm_interp(w[i])
-
-plt.plot(2*np.pi*f,GDD_cm*1e30)
-plt.xlim([2e15,3e15])
-plt.ylim([-300,100])
+plt.plot(w,GDD_cm*1e30)
+plt.ylim([-300,300])
 plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
 plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
 plt.grid()
@@ -210,17 +197,21 @@ plt.show()
 
 P01=pd.read_excel("P01_data.xlsx").to_numpy()
 n_p01=np.size(P01,0)
-lam_p01=np.zeros(np.size(P01,0))
-w_p01=np.zeros(np.size(P01,0))
-GDD_p01_data=np.zeros(np.size(P01,0))
+lam_p01=np.zeros(n_p01)
+GDD_p01_data_lam=np.zeros(n_p01)
 
 for j in range(0,np.size(P01,1)):
     for i in range (0,np.size(P01,0)):
         if j==0:
             lam_p01[i]=(P01[i][j])*1e-9
-            w_p01[n_p01-1-i]=2*np.pi*c/((P01[i][j])*1e-9)
         else:
-            GDD_p01_data[n_p01-1-i]=(P01[i][j])*1e-30
+            GDD_p01_data_lam[i]=(P01[i][j])*1e-30
+
+w_p01=np.zeros(n_p01)
+GDD_p01_data=np.zeros(n_p01)
+for i in range(n_p01):
+    w_p01[n_p01-1-i]=2*np.pi*c/lam_p01[i]
+    GDD_p01_data[n_p01-1-i]=GDD_p01_data_lam[i]
 
 GDD_p01_interp=inter.CubicSpline(w_p01,GDD_p01_data)
 
@@ -238,12 +229,12 @@ for i in range(0,n_p01):
         TOD_p01_data[i]=(m1+m2)/2
 
 TOD_p01_interp=inter.CubicSpline(w_p01,GDD_p01_data)
-TOD_p01=np.zeros(nn)
+TOD_p01=np.zeros(N)
 
 #print(GDD_p01_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
-GDD_p01=np.zeros(np.size(f))
-TOD_p01=np.zeros(np.size(f))
-for i in range(0,len(f)):
+GDD_p01=np.zeros(N)
+TOD_p01=np.zeros(N)
+for i in range(len(f)):
     GDD_p01[i]=GDD_p01_interp(w[i])
     TOD_p01[i]=TOD_p01_interp(w[i])
 
@@ -259,7 +250,7 @@ for i in range(0,len(f)):
 
 Ef=np.zeros(np.size(Ef0),dtype=np.complex_)
 
-for i in range(0,len(f)):
+for i in range(N):
     # Dispersion phases introduced by air up to the third order
     Ef[i]=Ef0[i]*np.exp(1j*kp0_air*zd)
     # Ef[i]=Ef[i]np.exp(1j*kp0_air*(w[i]-w0)*zd)
@@ -291,7 +282,6 @@ for i in range(0,len(f)):
 #     N=len(f)
 
 NN=1000
-df=f[1]-f[0]
 f=np.append(f,np.linspace(max(f)+df,max(f)+NN*df,NN))
 Ef=np.append(Ef,np.zeros(NN))
 
