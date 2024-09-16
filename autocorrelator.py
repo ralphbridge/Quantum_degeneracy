@@ -161,6 +161,16 @@ for i in range(n_cm):
 
 GD_cm_interp_function=inter.CubicSpline(w_cm,GD_cm)
 GD_cm_interp=GD_cm_interp_function(w)
+# GD_cm_interp=np.interp(w,w_cm,GD_cm)
+
+plt.plot(w_cm,GD_cm*1e15,'o')
+plt.plot(w,GD_cm_interp*1e15)
+plt.xlim([2e15,3e15])
+plt.ylim([0,75])
+plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
+plt.ylabel(r'GD $fs$', fontsize=16)
+plt.grid()
+plt.show()
 
 GDD_cm=np.zeros(N)
 TOD_cm=np.zeros(N)
@@ -172,22 +182,14 @@ for i in range(N): # Higher accuracy order derivatives from Fornberg 1988
         m1=(GD_cm_interp[i]-GD_cm_interp[i-1])/(w[i]-w[i-1])
         GDD_cm[i]=m1
     elif i==1 or i==N-2:
-        GDD_cm[i]=(-GD_cm_interp[i-1]+GD_cm_interp[i+1])/(2*df)
-        TOD_cm[i]=(GD_cm_interp[i-1]-2*GD_cm_interp[i]+GD_cm_interp[i+1])/(df**2)
+        GDD_cm[i]=(-GD_cm_interp[i-1]+GD_cm_interp[i+1])/(2*2*np.pi*df)
+        TOD_cm[i]=(GD_cm_interp[i-1]-2*GD_cm_interp[i]+GD_cm_interp[i+1])/((2*np.pi*df)**2)
     else:
-        GDD_cm[i]=(GD_cm_interp[i-2]-8*GD_cm_interp[i-1]+8*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*df)
-        TOD_cm[i]=(-GD_cm_interp[i-2]+16*GD_cm_interp[i-1]-30*GD_cm_interp[i]+16*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*df**2)
-
-# plt.plot(w_cm,GDD_cm_data*1e30)
-# plt.xlim([2e15,3e15])
-# plt.ylim([-100,300])
-# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
-# plt.ylabel(r'GDD $fs^2$', fontsize=16)
-# plt.grid()
-# plt.show()
+        GDD_cm[i]=(GD_cm_interp[i-2]-8*GD_cm_interp[i-1]+8*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*2*np.pi*df)
+        TOD_cm[i]=(-GD_cm_interp[i-2]+16*GD_cm_interp[i-1]-30*GD_cm_interp[i]+16*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*(2*np.pi*df)**2)
 
 plt.plot(w,GDD_cm*1e30)
-plt.ylim([-300,300])
+plt.ylim([-200,200])
 plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
 plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
 plt.grid()
