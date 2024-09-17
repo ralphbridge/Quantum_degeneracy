@@ -98,36 +98,33 @@ Et0=np.fft.ifftshift(np.fft.ifft(np.sqrt(2*spectrumf/(c*eps0)))) # Initial elect
 ########################## Trimming spectrum low and high frequencies and interpolating it to get equally spaced frequencies
 
 NN=799 # Length of actual spectrum (obtained from matlab)
-w=np.zeros(NN)
-spectrumw=np.zeros(NN)
+f_trim=np.zeros(NN)
+spectrumf_trim=np.zeros(NN)
 
 for i in range(0,NN):
-    w[i]=2*np.pi*f[i+266] # 266 is the position of the original spectrum where it starts being bigger than 0
-    spectrumw[i]=2*np.pi*spectrumf[i+266] # New angular frequency spectrum (trimmed)
+    f_trim[i]=f[i+266] # 266 is the position of the original spectrum where it starts being bigger than 0
+    spectrumf_trim[i]=spectrumf[i+266] # New angular frequency spectrum (trimmed)
     
-spectrumw_interp_function=inter.CubicSpline(w,spectrumw)
+spectrumf_interp_function=inter.CubicSpline(f_trim,spectrumf_trim)
 
-del f
 N=1500
-f=np.linspace(min(w)/(2*np.pi),max(w)/(2*np.pi),N)
-spectrumw_interp=np.zeros(N)
-df=f[1]-f[0]
+f_interp=np.linspace(min(f_trim),max(f_trim),N)
+spectrumf_interp=np.zeros(N)
+df=f_interp[1]-f_interp[0]
 
-del w
-w=2*np.pi*f
+w=2*np.pi*f_interp
 
 for i in range(N):
     if i==0:
-        spectrumw_interp[i]=spectrumw[i]
+        spectrumf_interp[i]=spectrumf_trim[i]
     elif i==N-1:
-        spectrumw_interp[i]=spectrumw[NN-1]
+        spectrumf_interp[i]=spectrumf_trim[NN-1]
     else:
-        spectrumw_interp[i]=spectrumw_interp_function(2*np.pi*f[i])
-        if spectrumw_interp[i]<0:
-            spectrumw_interp[i]=0
+        spectrumf_interp[i]=spectrumf_interp_function(f_interp[i])
+        if spectrumf_interp[i]<0:
+            spectrumf_interp[i]=0
 
-spectrum_interp=spectrumw_interp/(2*np.pi)
-Ef0=np.sqrt(2*spectrum_interp/(c*eps0))*(1+0j) # Initial electric field spectrum (trimmed)
+Ef0=np.sqrt(2*spectrumf_interp/(c*eps0))*(1+0j) # Initial electric field spectrum (trimmed)
 
 # Initial phases for original measured spectrum (up to third order)
 # i=0
@@ -138,10 +135,8 @@ Ef0=np.sqrt(2*spectrum_interp/(c*eps0))*(1+0j) # Initial electric field spectrum
 
 ######################## Increasing time resolution (by increasing frequency range)
 
-f_interp=f
-
 # NN=1000
-# f_interp=np.append(f_interp,np.linspace(max(f)+df,max(f)+NN*df,NN))
+# f_interp=np.append(f_interp,np.linspace(max(_interpf)+df,max(f_interp)+NN*df,NN))
 # Et0_interp=np.append(Ef0,np.zeros(NN))
 
 NN=len(f_interp)
@@ -151,7 +146,7 @@ NN=len(f_interp)
 fs=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
 
 t0_interp=np.arange(-NN/2,NN/2)/fs
-Et0_interp=np.fft.ifftshift(np.fft.ifft(Ef0)) # Initial electric field
+Et0_interp=np.fft.ifftshift(np.fft.ifft(np.sqrt(2*spectrumf_interp/(c*eps0)))) # Initial electric field
 
 ########################## Getting GDD data from Thorlabs chirped mirrors data
 
@@ -254,7 +249,7 @@ TOD_p01_interp=TOD_p01_interp_function(w)
 
 #print(GDD_p01_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
 
-# plt.plot(2*np.pi*f,GDD_p01*1e30)
+# plt.plot(w,GDD_p01*1e30)
 # plt.xlim([2e15,3e15])
 # # plt.ylim([-100,300])
 # plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
@@ -291,11 +286,17 @@ for i in range(N):
 
 ######################## Increasing time resolution (by increasing frequency range)
 
-NN=1000
-f=np.append(f,np.linspace(max(f)+df,max(f)+NN*df,NN))
-Ef=np.append(Ef,np.zeros(NN))
+plt.plot(f,spectrumf,'o')
+plt.xlim([min(f_interp),max(f_interp)])
+plt.plot(f_trim,spectrumf_trim,'-x')
+plt.plot(f_interp,spectrumf_interp)
+plt.grid()
 
-N=len(f)
+# NN=1000
+# f_interp=np.append(f_interp,np.linspace(max(f_interp)+df,max(f_interp)+NN*df,NN))
+# Ef=np.append(Ef,np.zeros(NN))
+
+# N=len(f_interp)
 
 fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
@@ -321,7 +322,7 @@ plt.show()
 
 ##################################################
 
-fs=max(f)-min(f) # Sampling frequency (equals the bandwidth or maximum frequency)
+fs=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
 t=np.arange(-N/2,N/2)/fs
 
 Et=np.fft.ifftshift(np.fft.ifft(Ef))
