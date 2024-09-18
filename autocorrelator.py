@@ -107,7 +107,7 @@ for i in range(0,NN):
     
 spectrumf_interp_function=inter.CubicSpline(f_trim,spectrumf_trim)
 
-N=1500
+N=810
 f_interp=np.linspace(min(f_trim),max(f_trim),N)
 spectrumf_interp=np.zeros(N)
 df=f_interp[1]-f_interp[0]
@@ -139,14 +139,30 @@ Ef0=np.sqrt(2*spectrumf_interp/(c*eps0))*(1+0j) # Initial electric field spectru
 # f_interp=np.append(f_interp,np.linspace(max(_interpf)+df,max(f_interp)+NN*df,NN))
 # Et0_interp=np.append(Ef0,np.zeros(NN))
 
-NN=len(f_interp)
+# N=len(f_interp)
 
 ######################################
 
-fs=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
-
-t0_interp=np.arange(-NN/2,NN/2)/fs
+# fs_interp=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
+fs_interp=N*df
+t0_interp=np.arange(-N/2,N/2)/fs_interp
 Et0_interp=np.fft.ifftshift(np.fft.ifft(np.sqrt(2*spectrumf_interp/(c*eps0)))) # Initial electric field
+
+fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+plt.subplot(2,1,1)
+line1,=plt.plot(t0*1e15,Et0)
+# ax1.set_xlim([-20,20])
+ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
+ax1.grid(which='both')
+
+plt.subplot(2,1,2)
+line2,=ax2.plot((t0_interp)*1e15,Et0_interp)
+ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
+ax2.set_ylabel('$E_0^{interp}\ V/m$', fontsize=16)
+# ax2.set_xlim([-20,20])
+ax2.grid(which='both')
+plt.show()
 
 ########################## Getting GDD data from Thorlabs chirped mirrors data
 
@@ -286,44 +302,16 @@ for i in range(N):
 
 ######################## Increasing time resolution (by increasing frequency range)
 
-plt.plot(f,spectrumf,'o')
-plt.xlim([min(f_interp),max(f_interp)])
-plt.plot(f_trim,spectrumf_trim,'-x')
-plt.plot(f_interp,spectrumf_interp)
-plt.grid()
-
 # NN=1000
 # f_interp=np.append(f_interp,np.linspace(max(f_interp)+df,max(f_interp)+NN*df,NN))
 # Ef=np.append(Ef,np.zeros(NN))
 
 # N=len(f_interp)
 
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-plt.subplot(2,1,1)
-line1,=plt.plot(t0*1e15,Et0)
-ax1.set_xlim([-20,20])
-ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
-# major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
-# minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
-# ax1.set_xticks(major_tick) # Grid
-# ax1.set_xticks(minor_tick, minor=True)
-ax1.grid(which='both')
-
-plt.subplot(2,1,2)
-line2,=ax2.plot((t0_interp)*1e15,Et0_interp)
-ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('$E_0^{interp}\ V/m$', fontsize=16)
-ax2.set_xlim([-20,20])
-ax2.grid(which='both')
-
-# fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
-plt.show()
-
 ##################################################
 
-fs=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
-t=np.arange(-N/2,N/2)/fs
+# fs=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
+t=np.arange(-N/2,N/2)/fs_interp
 
 Et=np.fft.ifftshift(np.fft.ifft(Ef))
 
