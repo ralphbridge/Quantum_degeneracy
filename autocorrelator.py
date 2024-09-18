@@ -11,6 +11,8 @@ lambda0=756e-9 # laser central wavelength
 w0=2*np.pi*c/lambda0
 E00=np.sqrt(2*1e14/(c*eps0))
 
+n_bounces=8
+
 zd=2
 zw=3e-3
 
@@ -38,6 +40,13 @@ k0_bk7=float(n0_bk7*w0/c)
 kp0_bk7=float((n0_bk7+w0*np0_bk7)/c)
 kpp0_bk7=float((2*np0_bk7+w0*npp0_bk7)/c)
 kppp0_bk7=float((3*npp0_bk7+w0*nppp0_bk7)/c)
+
+def InverseFourier(Fw,w,t):
+    ft=np.zeros(np.size(w),dtype=np.complex128)
+    for j in range(len(t)):
+        for i in range(len(w)):
+            ft[j]+=Fw[i]*np.exp(1j*w[i]*t[j])+np.conj(Fw[i])*np.exp(-1j*w[i]*t[j])
+    return np.real(ft)
 
 def E0shift(E0,j):
     Ef=np.zeros(len(E0))
@@ -84,6 +93,11 @@ for j in range(0,np.size(S,1)):
 
 Il=(Il-min(Il))/max(Il) # Initial measured spectrum
 
+plt.plot(lam*1e9,Il)
+plt.xlabel('wavelength nm')
+plt.grid()
+plt.show()
+
 f=np.zeros(n)
 spectrumf=np.zeros(n)
 
@@ -91,9 +105,17 @@ for i in range(n):
     f[n-i-1]=c/(lam[i])
     spectrumf[n-i-1]=(lam[i]**2)*Il[i]/c
 
-fs=max(f)-min(f) # Sampling frequency (equals the bandwidth or maximum frequency)
-t0=np.arange(-n/2,n/2)/fs
-Et0=np.fft.ifftshift(np.fft.ifft(np.sqrt(2*spectrumf/(c*eps0)))) # Initial electric field spectrum
+plt.plot(f,spectrumf)
+plt.xlabel('frequency')
+plt.title('Original frequency spectrum')
+plt.grid()
+plt.show()
+
+######################## Increasing time resolution (by increasing frequency range)
+
+Ef0=np.sqrt(2*spectrumf/(c*eps0))
+t0=np.linspace(0,50e-15,len(f))
+Et0=InverseFourier(Ef0,2*np.pi*f,t0)
 
 ########################## Trimming spectrum low and high frequencies and interpolating it to get equally spaced frequencies
 
@@ -104,10 +126,16 @@ spectrumf_trim=np.zeros(NN)
 for i in range(0,NN):
     f_trim[i]=f[i+266] # 266 is the position of the original spectrum where it starts being bigger than 0
     spectrumf_trim[i]=spectrumf[i+266] # New angular frequency spectrum (trimmed)
-    
+
+plt.plot(f_trim,spectrumf_trim)
+plt.xlabel('frequency')
+plt.title('Trimmed frequency spectrum')
+plt.grid()
+plt.show()
+
 spectrumf_interp_function=inter.CubicSpline(f_trim,spectrumf_trim)
 
-N=810
+N=6000
 f_interp=np.linspace(min(f_trim),max(f_trim),N)
 spectrumf_interp=np.zeros(N)
 df=f_interp[1]-f_interp[0]
@@ -124,7 +152,13 @@ for i in range(N):
         if spectrumf_interp[i]<0:
             spectrumf_interp[i]=0
 
-Ef0=np.sqrt(2*spectrumf_interp/(c*eps0))*(1+0j) # Initial electric field spectrum (trimmed)
+Ef0_interp=np.sqrt(2*spectrumf_interp/(c*eps0))*(1+0j) # Initial electric field spectrum (trimmed)
+
+plt.plot(f_interp,spectrumf_interp)
+plt.xlabel('frequency')
+plt.title('Interpolated frequency spectrum')
+plt.grid()
+plt.show()
 
 # Initial phases for original measured spectrum (up to third order)
 # i=0
@@ -133,25 +167,14 @@ Ef0=np.sqrt(2*spectrumf_interp/(c*eps0))*(1+0j) # Initial electric field spectru
 #     Ef0[i]=Ef0[i]*np.exp(1j*TOD_laser[i]*(w-w0)**3/math.factorial(3))
 #     i+=1
 
-######################## Increasing time resolution (by increasing frequency range)
-
-# NN=1000
-# f_interp=np.append(f_interp,np.linspace(max(_interpf)+df,max(f_interp)+NN*df,NN))
-# Et0_interp=np.append(Ef0,np.zeros(NN))
-
-# N=len(f_interp)
-
 ######################################
 
-# fs_interp=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
-fs_interp=N*df
-t0_interp=np.arange(-N/2,N/2)/fs_interp
-Et0_interp=np.fft.ifftshift(np.fft.ifft(np.sqrt(2*spectrumf_interp/(c*eps0)))) # Initial electric field
+t0_interp=np.linspace(0,50e-15,len(f_interp))
+Et0_interp=InverseFourier(Ef0_interp,2*np.pi*f_interp,t0_interp)
 
 fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
 line1,=plt.plot(t0*1e15,Et0)
-# ax1.set_xlim([-20,20])
 ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
 ax1.grid(which='both')
@@ -160,7 +183,6 @@ plt.subplot(2,1,2)
 line2,=ax2.plot((t0_interp)*1e15,Et0_interp)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax2.set_ylabel('$E_0^{interp}\ V/m$', fontsize=16)
-# ax2.set_xlim([-20,20])
 ax2.grid(which='both')
 plt.show()
 
@@ -275,45 +297,37 @@ TOD_p01_interp=TOD_p01_interp_function(w)
 
 ############################## Computing the phases due to each element in the layout
 
-Ef=np.zeros(np.size(Ef0),dtype=np.complex128)
+Ef=np.zeros(np.size(Ef0_interp),dtype=np.complex128)
 
 for i in range(N):
     # Dispersion phases introduced by air up to the third order
-    Ef[i]=Ef0[i]*np.exp(1j*kp0_air*zd)
-    Ef[i]=Ef[i]*np.exp(1j*kp0_air*(w[i]-w0)*zd)
-    Ef[i]=Ef[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
-    Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
+    # Ef[i]=Ef0_interp[i]*np.exp(1j*float(n_air.subs(x,w[i]))*w[i]*zd/c)
+    Ef[i]=Ef0_interp[i]*np.exp(1j*k0_air*zd)
+    # Ef[i]=Ef[i]*np.exp(1j*kp0_air*(w[i]-w0)*zd)
+    # Ef[i]=Ef[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
+    # Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
     
     # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
-    Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*zd)
-    Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
-    Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
-    Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
+    Ef[i]=Ef[i]*np.exp(1j*k0_bk7*zd)
+    # Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
+    # Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
+    # Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
     
     # # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
     # Ef[i]=Ef[i]*np.exp(1j*GDD_cm[i]*(w[i]-w0)**2/math.factorial(2))
     # Ef[i]=Ef[i]*np.exp(1j*TOD_cm[i]*(w[i]-w0)**3/math.factorial(3))
-    Ef[i]=Ef[i]*np.exp(1j*GD_cm_interp[i]*(w[i]-w0))
+    Ef[i]=Ef[i]*np.exp(1j*n_bounces*GD_cm_interp[i]*(w[i]-w0))
     
     # # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
     # Ef[i]=Ef[i]*np.exp(1j*GDD_p01[i]*(w[i]-w0)**2/math.factorial(2))
     # Ef[i]=Ef[i]*np.exp(1j*TOD_p01[i]*(w[i]-w0)**3/math.factorial(3))
     Ef[i]=Ef[i]*np.exp(1j*0.5*GDD_p01_interp[i]*(w[i]-w0)**2)
 
-######################## Increasing time resolution (by increasing frequency range)
-
-# NN=1000
-# f_interp=np.append(f_interp,np.linspace(max(f_interp)+df,max(f_interp)+NN*df,NN))
-# Ef=np.append(Ef,np.zeros(NN))
-
-# N=len(f_interp)
-
 ##################################################
 
 # fs=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
-t=np.arange(-N/2,N/2)/fs_interp
-
-Et=np.fft.ifftshift(np.fft.ifft(Ef))
+t=np.linspace(-2e-12,2e-12,len(f_interp))
+Et=InverseFourier(Ef,2*np.pi*f_interp,t)
 
 fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
 plt.subplot(2,1,1)
@@ -328,15 +342,14 @@ ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
 ax1.grid(which='both')
 
 plt.subplot(2,1,2)
-line2,=ax2.plot((t-t[np.argmax(Et)])*1e15,Et)
+line2,=ax2.plot(t*1e15,Et)
 ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
 ax2.set_ylabel('$E\ V/m$', fontsize=16)
-ax2.set_xlim([-100,100])
-
-major_tick = np.arange(-100,100,20)
-minor_tick = np.arange(-100,100,10)
-ax2.set_xticks(major_tick)
-ax2.set_xticks(minor_tick, minor=True)
+# ax2.set_xlim([-100,100])
+# major_tick = np.arange(-100,100,20)
+# minor_tick = np.arange(-100,100,10)
+# ax2.set_xticks(major_tick)
+# ax2.set_xticks(minor_tick, minor=True)
 ax2.grid(which='both')
 
 # fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
@@ -362,7 +375,7 @@ fig,(ax3)=plt.subplots(1,1,tight_layout=True)
 # ax2.set_xlim([-20,20])
 # ax2.grid()
 
-line3,=ax3.plot(t*1e15 ,Squad,lw=1)
+line3,=ax3.plot((t-t[np.argmax(Squad)])*1e15,Squad,lw=1)
 ax3.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
 ax3.set_ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
 ax3.set_xlim([-50,50])
@@ -377,6 +390,4 @@ plt.show()
 # plt.grid()
 # plt.show()
 
-# Check difference between calculated and experimental total GDD
-# Discuss Agrawal's expressions with Herman
-# Get theoretical expression for Fourier transform (for simple Gaussian spectrum)
+# 
