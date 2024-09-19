@@ -11,7 +11,7 @@ lambda0=756e-9 # laser central wavelength
 w0=2*np.pi*c/lambda0
 E00=np.sqrt(2*1e14/(c*eps0))
 
-n_bounces=8
+n_bounces=16
 
 zd=2
 zw=3e-3
@@ -253,14 +253,14 @@ for i in range(N):
     # Ef[i]=Ef0_interp[i]*np.exp(1j*float(n_air.subs(x,w[i]))*w[i]*zd/c)
     Ef[i]=Ef0_interp[i]*np.exp(1j*k0_air*zd)
     # Ef[i]=Ef[i]*np.exp(1j*kp0_air*(w[i]-w0)*zd)
-    # Ef[i]=Ef[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
-    # Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
+    Ef[i]=Ef[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
+    Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
     
     # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
     Ef[i]=Ef[i]*np.exp(1j*k0_bk7*zw)
     # Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
-    # Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
-    # Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
+    Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
+    Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
     
     # # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
     # Ef[i]=Ef[i]*np.exp(1j*GDD_cm[i]*(w[i]-w0)**2/math.factorial(2))
