@@ -93,23 +93,12 @@ for j in range(0,np.size(S,1)):
 
 Il=(Il-min(Il))/max(Il) # Initial measured spectrum
 
-plt.plot(lam*1e9,Il)
-plt.xlabel('wavelength nm')
-plt.grid()
-plt.show()
-
 f=np.zeros(n)
 spectrumf=np.zeros(n)
 
 for i in range(n):
     f[n-i-1]=c/(lam[i])
     spectrumf[n-i-1]=(lam[i]**2)*Il[i]/c
-
-plt.plot(f,spectrumf)
-plt.xlabel('frequency')
-plt.title('Original frequency spectrum')
-plt.grid()
-plt.show()
 
 ######################## Increasing time resolution (by increasing frequency range)
 
@@ -127,15 +116,9 @@ for i in range(0,NN):
     f_trim[i]=f[i+266] # 266 is the position of the original spectrum where it starts being bigger than 0
     spectrumf_trim[i]=spectrumf[i+266] # New angular frequency spectrum (trimmed)
 
-plt.plot(f_trim,spectrumf_trim)
-plt.xlabel('frequency')
-plt.title('Trimmed frequency spectrum')
-plt.grid()
-plt.show()
-
 spectrumf_interp_function=inter.CubicSpline(f_trim,spectrumf_trim)
 
-N=6000
+N=7000
 f_interp=np.linspace(min(f_trim),max(f_trim),N)
 spectrumf_interp=np.zeros(N)
 df=f_interp[1]-f_interp[0]
@@ -154,12 +137,6 @@ for i in range(N):
 
 Ef0_interp=np.sqrt(2*spectrumf_interp/(c*eps0))*(1+0j) # Initial electric field spectrum (trimmed)
 
-plt.plot(f_interp,spectrumf_interp)
-plt.xlabel('frequency')
-plt.title('Interpolated frequency spectrum')
-plt.grid()
-plt.show()
-
 # Initial phases for original measured spectrum (up to third order)
 # i=0
 # for w in 2*np.pi*f:
@@ -172,19 +149,19 @@ plt.show()
 t0_interp=np.linspace(0,50e-15,len(f_interp))
 Et0_interp=InverseFourier(Ef0_interp,2*np.pi*f_interp,t0_interp)
 
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-plt.subplot(2,1,1)
-line1,=plt.plot(t0*1e15,Et0)
-ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
-ax1.grid(which='both')
+# fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+# plt.subplot(2,1,1)
+# line1,=plt.plot(t0*1e15,Et0)
+# ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+# ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
+# ax1.grid(which='both')
 
-plt.subplot(2,1,2)
-line2,=ax2.plot((t0_interp)*1e15,Et0_interp)
-ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('$E_0^{interp}\ V/m$', fontsize=16)
-ax2.grid(which='both')
-plt.show()
+# plt.subplot(2,1,2)
+# line2,=ax2.plot((t0_interp)*1e15,Et0_interp)
+# ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
+# ax2.set_ylabel('$E_0^{interp}\ V/m$', fontsize=16)
+# ax2.grid(which='both')
+# plt.show()
 
 ########################## Getting GDD data from Thorlabs chirped mirrors data
 
@@ -200,10 +177,6 @@ for j in range(np.size(CM,1)):
         else:
             GD_cm_lam[i]=(CM[i][j])*1e-15
 
-# plt.plot(lam_cm,GD_cm_lam)
-# plt.xlabel('wavelength')
-# plt.show()
-
 w_cm=np.zeros(n_cm)
 GD_cm=np.zeros(n_cm)
 for i in range(n_cm):
@@ -213,15 +186,6 @@ for i in range(n_cm):
 GD_cm_interp_function=inter.CubicSpline(w_cm,GD_cm)
 GD_cm_interp=GD_cm_interp_function(w)
 # GD_cm_interp=np.interp(w,w_cm,GD_cm)
-
-# plt.plot(w_cm,GD_cm*1e15,'o')
-# plt.plot(w,GD_cm_interp*1e15)
-# plt.xlim([2e15,3e15])
-# plt.ylim([0,75])
-# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
-# plt.ylabel(r'GD $fs$', fontsize=16)
-# plt.grid()
-# plt.show()
 
 GDD_cm=np.zeros(N)
 TOD_cm=np.zeros(N)
@@ -238,13 +202,6 @@ for i in range(N): # Higher accuracy order derivatives from Fornberg 1988
     else:
         GDD_cm[i]=(GD_cm_interp[i-2]-8*GD_cm_interp[i-1]+8*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*2*np.pi*df)
         TOD_cm[i]=(-GD_cm_interp[i-2]+16*GD_cm_interp[i-1]-30*GD_cm_interp[i]+16*GD_cm_interp[i+1]-GD_cm_interp[i+2])/(12*(2*np.pi*df)**2)
-
-# plt.plot(w,GDD_cm*1e30)
-# plt.ylim([-200,200])
-# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
-# plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
-# plt.grid()
-# plt.show()
 
 ########################## Getting GDD data from Thorlabs P01 mirrors data
 
@@ -287,14 +244,6 @@ TOD_p01_interp=TOD_p01_interp_function(w)
 
 #print(GDD_p01_interp(2*np.pi*c/800e-9)*1e30) # Check this line, it does not interpolate correctly
 
-# plt.plot(w,GDD_p01*1e30)
-# plt.xlim([2e15,3e15])
-# # plt.ylim([-100,300])
-# plt.xlabel(r'Angular frequency $\omega\ rad/s$', fontsize=16)
-# plt.ylabel(r'Interpolated GDD $fs^2$', fontsize=16)
-# plt.grid()
-# plt.show()
-
 ############################## Computing the phases due to each element in the layout
 
 Ef=np.zeros(np.size(Ef0_interp),dtype=np.complex128)
@@ -308,7 +257,7 @@ for i in range(N):
     # Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
     
     # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
-    Ef[i]=Ef[i]*np.exp(1j*k0_bk7*zd)
+    Ef[i]=Ef[i]*np.exp(1j*k0_bk7*zw)
     # Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
     # Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
     # Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
@@ -326,34 +275,34 @@ for i in range(N):
 ##################################################
 
 # fs=max(f_interp)-min(f_interp) # Sampling frequency (equals the bandwidth or maximum frequency)
-t=np.linspace(-2e-12,2e-12,len(f_interp))
+t=np.linspace(-3e-12,3e-12,len(f_interp))
 Et=InverseFourier(Ef,2*np.pi*f_interp,t)
 
-fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
-plt.subplot(2,1,1)
-line1,=plt.plot(t0*1e15,Et0)
-ax1.set_xlim([-20,20])
-ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
-# major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
-# minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
-# ax1.set_xticks(major_tick) # Grid
-# ax1.set_xticks(minor_tick, minor=True)
-ax1.grid(which='both')
+# fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
+# plt.subplot(2,1,1)
+# line1,=plt.plot(t0*1e15,Et0)
+# ax1.set_xlim([-20,20])
+# ax1.set_xlabel(r'Time $t\ fs$', fontsize=16)
+# ax1.set_ylabel(r'$E_0\ V/m$', fontsize=16)
+# # major_tick = np.arange(roundup(min(lam)*1e9), roundup(max(lam)*1e9),200)#[200, 400, 600, 800, 1000]
+# # minor_tick = np.arange(roundup(min(lam)*1e9)+100, roundup(max(lam)*1e9),200)#[300, 500, 700, 900]
+# # ax1.set_xticks(major_tick) # Grid
+# # ax1.set_xticks(minor_tick, minor=True)
+# ax1.grid(which='both')
 
-plt.subplot(2,1,2)
-line2,=ax2.plot(t*1e15,Et)
-ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
-ax2.set_ylabel('$E\ V/m$', fontsize=16)
-# ax2.set_xlim([-100,100])
-# major_tick = np.arange(-100,100,20)
-# minor_tick = np.arange(-100,100,10)
-# ax2.set_xticks(major_tick)
-# ax2.set_xticks(minor_tick, minor=True)
-ax2.grid(which='both')
+# plt.subplot(2,1,2)
+# line2,=ax2.plot(t*1e15,Et)
+# ax2.set_xlabel(r'Time $t\ fs$', fontsize=16)
+# ax2.set_ylabel('$E\ V/m$', fontsize=16)
+# # ax2.set_xlim([-100,100])
+# # major_tick = np.arange(-100,100,20)
+# # minor_tick = np.arange(-100,100,10)
+# # ax2.set_xticks(major_tick)
+# # ax2.set_xticks(minor_tick, minor=True)
+# ax2.grid(which='both')
 
-# fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
-plt.show()
+# # fig.savefig("Frequency_Time.pdf",bbox_inches='tight')
+# plt.show()
 
 ###############
 
@@ -378,16 +327,9 @@ fig,(ax3)=plt.subplots(1,1,tight_layout=True)
 line3,=ax3.plot((t-t[np.argmax(Squad)])*1e15,Squad,lw=1)
 ax3.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
 ax3.set_ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
-ax3.set_xlim([-50,50])
+ax3.set_xlim([-150,150])
 ax3.grid()
 # plt.savefig("FieldTrace_chirp.pdf",bbox_inches='tight')
 plt.show()
 
-# plt.plot(t_fit*1e15 ,Squad,lw=1)
-# plt.xlabel(r'Time delay $\tau\ fs$', fontsize=16)
-# plt.ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
-# plt.xlim([-100,100])
-# plt.grid()
-# plt.show()
-
-# 
+# Check first, second and third order phases added due to air and BK7
