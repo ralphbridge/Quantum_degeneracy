@@ -11,10 +11,15 @@ lambda0=756e-9 # laser central wavelength
 w0=2*np.pi*c/lambda0
 E00=np.sqrt(2*1e14/(c*eps0))
 
-n_bounces=16
+GDD_laser=124e-30 # Check FSAC manual for correct values
+TOD_laser=0
+GDD_fsac=230e-30
+TOD_fsac=345e-45
 
-zd=2
-zw=3e-3
+n_bounces=12
+
+zd=2.06+0.05*(n_bounces-1) # Distance from laser pinhole to FSAC pinhole
+zw=5.5e-3 # Measure this again
 
 x=sym.Symbol('x')
 
@@ -61,7 +66,7 @@ def S_l(t,E0):
     S=np.zeros(len(t))
     j=0
     for tau in t:            
-        S[j]=np.trapz((E0+E0shift(E0,j))**2,t)
+        S[j]=np.trapezoid((E0+E0shift(E0,j))**2,t)
         j+=1
     return S
 
@@ -69,7 +74,7 @@ def S_q(t,E0):
     S=np.zeros(len(t))
     j=0
     for tau in t:            
-        S[j]=np.trapz((E0+E0shift(E0,j))**4,t)
+        S[j]=np.trapezoid((E0+E0shift(E0,j))**4,t)
         j+=1
     return S
 
@@ -138,11 +143,11 @@ for i in range(N):
 Ef0_interp=np.sqrt(2*spectrumf_interp/(c*eps0))*(1+0j) # Initial electric field spectrum (trimmed)
 
 # Initial phases for original measured spectrum (up to third order)
-# i=0
-# for w in 2*np.pi*f:
-#     Ef0[i]=Ef0[i]*np.exp(1j*GDD_laser[i]*(w-w0)**2/math.factorial(2))
-#     Ef0[i]=Ef0[i]*np.exp(1j*TOD_laser[i]*(w-w0)**3/math.factorial(3))
-#     i+=1
+
+for i in range(N):
+    # Dispersion phases introduced by the laser itself to the pulse
+    Ef0_interp[i]=Ef0_interp[i]*np.exp(1j*GDD_laser*(w[i]-w0)**2/math.factorial(2))
+    Ef0_interp[i]=Ef0_interp[i]*np.exp(1j*TOD_laser*(w[i]-w0)**3/math.factorial(3))
 
 ######################################
 
@@ -250,19 +255,18 @@ Ef=np.zeros(np.size(Ef0_interp),dtype=np.complex128)
 
 for i in range(N):
     # Dispersion phases introduced by air up to the third order
-    # Ef[i]=Ef0_interp[i]*np.exp(1j*float(n_air.subs(x,w[i]))*w[i]*zd/c)
-    Ef[i]=Ef0_interp[i]*np.exp(1j*k0_air*zd)
+    # Ef[i]=Ef0_interp[i]*np.exp(1j*k0_air*zd)
     # Ef[i]=Ef[i]*np.exp(1j*kp0_air*(w[i]-w0)*zd)
-    Ef[i]=Ef[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
+    Ef[i]=Ef0_interp[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
     Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
     
     # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
-    Ef[i]=Ef[i]*np.exp(1j*k0_bk7*zw)
+    # Ef[i]=Ef[i]*np.exp(1j*k0_bk7*zw)
     # Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
     Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
     Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
     
-    # # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
+    # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
     # Ef[i]=Ef[i]*np.exp(1j*GDD_cm[i]*(w[i]-w0)**2/math.factorial(2))
     # Ef[i]=Ef[i]*np.exp(1j*TOD_cm[i]*(w[i]-w0)**3/math.factorial(3))
     Ef[i]=Ef[i]*np.exp(1j*n_bounces*GD_cm_interp[i]*(w[i]-w0))
@@ -270,7 +274,11 @@ for i in range(N):
     # # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
     # Ef[i]=Ef[i]*np.exp(1j*GDD_p01[i]*(w[i]-w0)**2/math.factorial(2))
     # Ef[i]=Ef[i]*np.exp(1j*TOD_p01[i]*(w[i]-w0)**3/math.factorial(3))
-    Ef[i]=Ef[i]*np.exp(1j*0.5*GDD_p01_interp[i]*(w[i]-w0)**2)
+    Ef[i]=Ef[i]*np.exp(1j*GDD_p01_interp[i]*(w[i]-w0)**2/math.factorial(2))
+    
+    # # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
+    Ef[i]=Ef[i]*np.exp(1j*GDD_fsac*(w[i]-w0)**2/math.factorial(2))
+    Ef[i]=Ef[i]*np.exp(1j*TOD_fsac*(w[i]-w0)**3/math.factorial(3))
 
 ##################################################
 
@@ -306,7 +314,7 @@ Et=InverseFourier(Ef,2*np.pi*f_interp,t)
 
 ###############
 
-Slinear=S_l(t,Et)
+# Slinear=S_l(t,Et)
 Squad=S_q(t,Et)
 
 fig,(ax3)=plt.subplots(1,1,tight_layout=True)
