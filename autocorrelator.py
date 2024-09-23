@@ -16,10 +16,10 @@ TOD_laser=0
 GDD_fsac=230e-30
 TOD_fsac=345e-45
 
-n_bounces=12
+n_bounces=2
 
 zd=2.06+0.05*(n_bounces-1) # Distance from laser pinhole to FSAC pinhole
-zw=5.5e-3 # Measure this again
+zw=0e-3 # Measure this again
 
 x=sym.Symbol('x')
 
@@ -335,9 +335,9 @@ fig,(ax3)=plt.subplots(1,1,tight_layout=True)
 line3,=ax3.plot((t-t[np.argmax(Squad)])*1e15,Squad,lw=1)
 ax3.set_xlabel(r'Time delay $\tau\ fs$', fontsize=16)
 ax3.set_ylabel(r'$S_{quadratic}\ W/m^2$', fontsize=16)
-ax3.set_xlim([-150,150])
+ax3.set_xlim([-250,250])
 ax3.grid()
-# plt.savefig("FieldTrace_chirp.pdf",bbox_inches='tight')
+plt.savefig('FieldTrace_'+str(n_bounces)+'b_far.pdf',bbox_inches='tight')
 plt.show()
 
 # Check first, second and third order phases added due to air and BK7
