@@ -123,7 +123,7 @@ for i in range(0,NN):
 
 spectrumf_interp_function=inter.CubicSpline(f_trim,spectrumf_trim)
 
-N=7000
+N=6900
 f_interp=np.linspace(min(f_trim),max(f_trim),N)
 spectrumf_interp=np.zeros(N)
 df=f_interp[1]-f_interp[0]
@@ -258,25 +258,25 @@ for i in range(N):
     # Ef[i]=Ef0_interp[i]*np.exp(1j*k0_air*zd)
     # Ef[i]=Ef[i]*np.exp(1j*kp0_air*(w[i]-w0)*zd)
     Ef[i]=Ef0_interp[i]*np.exp(1j*kpp0_air*(w[i]-w0)**2*zd/math.factorial(2))
-    Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
+    # Ef[i]=Ef[i]*np.exp(1j*kppp0_air*(w[i]-w0)**3*zd/math.factorial(3))
     
     # Dispersion phases introduced by BK7 Fused Silica glass window up to the third order
     # Ef[i]=Ef[i]*np.exp(1j*k0_bk7*zw)
     # Ef[i]=Ef[i]*np.exp(1j*kp0_bk7*(w[i]-w0)*zw)
-    Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
-    Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
+    # Ef[i]=Ef[i]*np.exp(1j*kpp0_bk7*(w[i]-w0)**2*zw/math.factorial(2))
+    # Ef[i]=Ef[i]*np.exp(1j*kppp0_bk7*(w[i]-w0)**3*zw/math.factorial(3))
     
-    # Dispersion phases introduced by bounces off Chirped mirrors up to the third order
+    # Dispersion phases introduced by bounces off Chirped mirrors
     # Ef[i]=Ef[i]*np.exp(1j*GDD_cm[i]*(w[i]-w0)**2/math.factorial(2))
     # Ef[i]=Ef[i]*np.exp(1j*TOD_cm[i]*(w[i]-w0)**3/math.factorial(3))
     Ef[i]=Ef[i]*np.exp(1j*n_bounces*GD_cm_interp[i]*(w[i]-w0))
     
-    # # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
+    # # Dispersion phases introduced by bounces off P01 Silver mirrors
     # Ef[i]=Ef[i]*np.exp(1j*GDD_p01[i]*(w[i]-w0)**2/math.factorial(2))
     # Ef[i]=Ef[i]*np.exp(1j*TOD_p01[i]*(w[i]-w0)**3/math.factorial(3))
     Ef[i]=Ef[i]*np.exp(1j*GDD_p01_interp[i]*(w[i]-w0)**2/math.factorial(2))
     
-    # # Dispersion phases introduced by bounces off P01 Silver mirrors up to the third order
+    # # Dispersion phases introduced by the FSAC up to the third order
     Ef[i]=Ef[i]*np.exp(1j*GDD_fsac*(w[i]-w0)**2/math.factorial(2))
     Ef[i]=Ef[i]*np.exp(1j*TOD_fsac*(w[i]-w0)**3/math.factorial(3))
 
