@@ -16,7 +16,7 @@ TOD_laser=0
 GDD_fsac=230e-30
 TOD_fsac=345e-45
 
-n_bounces=2
+n_bounces=14
 
 zd=2.06+0.05*(n_bounces-1) # Distance from laser pinhole to FSAC pinhole
 zw=0e-3 # Measure this again
@@ -123,7 +123,7 @@ for i in range(0,NN):
 
 spectrumf_interp_function=inter.CubicSpline(f_trim,spectrumf_trim)
 
-N=6900
+N=3000
 f_interp=np.linspace(min(f_trim),max(f_trim),N)
 spectrumf_interp=np.zeros(N)
 df=f_interp[1]-f_interp[0]
