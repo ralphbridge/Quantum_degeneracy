@@ -364,4 +364,4 @@ plot((t-t(argmax(Squad)))*1e15,Squad)
 grid on
 % plt.savefig('FieldTrace_'+str(n_bounces)+'b_far.pdf',bbox_inches='tight')
 
-% Check first, second and third order phases added due to air and BK7
+% Check first, second and third order phases added due to air and BK7 Hola
