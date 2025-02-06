@@ -19,23 +19,23 @@ zw=0e-3; % Window thickness (measure this again)
 
 syms x
 
-n_air=1+0.05792105/(238.0185-(1e-12)*(x/(2*pi*c))^2)+0.00167917/(57.362-(1e-12)*(x/(2*np.pi*c))^2);
+n_air=1+0.05792105/(238.0185-(1e-12)*(x/(2*pi*c))^2)+0.00167917/(57.362-(1e-12)*(x/(2*pi*c))^2);
 n_bk7=(1+1.03961212*(1e12)*(2*pi*c/x)^2/((1e12)*(2*pi*c/x)^2-0.00600069867)+0.231792344*(1e12)*(2*pi*c/x)^2/((1e12)*(2*pi*c/x)^2-0.0200179144)+1.01046945*(1e12)*(2*pi*c/x)^2/((1e12)*(2*pi*c/x)^2-103.560653));
 
-n0_air=subs(n_air,w0);
-np0_air=subs(diff(n_air,x),w0);
-npp0_air=subs(diff(diff(n_air,x),x),w0);
-nppp0_air=subs(diff(diff(diff(n_air,x),x)),w0);
+n0_air=double(subs(n_air,w0));
+np0_air=double(subs(diff(n_air,x),w0));
+npp0_air=double(subs(diff(diff(n_air,x),x),w0));
+nppp0_air=double(subs(diff(diff(diff(n_air,x),x)),w0));
 
 k0_air=n0_air*w0/c;
 kp0_air=(n0_air+w0*np0_air)/c;
 kpp0_air=(2*np0_air+w0*npp0_air)/c;
 kppp0_air=(3*npp0_air+w0*nppp0_air)/c;
 
-n0_bk7=subs(n_bk7,w0);
-np0_bk7=subs(diff(n_bk7,x),w0);
-npp0_bk7=subs(diff(diff(n_bk7,x),x),w0);
-nppp0_bk7=subs(diff(diff(diff(n_bk7,x),x)),w0);
+n0_bk7=double(subs(n_bk7,w0));
+np0_bk7=double(subs(diff(n_bk7,x),w0));
+npp0_bk7=double(subs(diff(diff(n_bk7,x),x),w0));
+nppp0_bk7=double(subs(diff(diff(diff(n_bk7,x),x)),w0));
 
 k0_bk7=n0_bk7*w0/c;
 kp0_bk7=(n0_bk7+w0*np0_bk7)/c;
@@ -43,7 +43,7 @@ kpp0_bk7=(2*np0_bk7+w0*npp0_bk7)/c;
 kppp0_bk7=(3*npp0_bk7+w0*nppp0_bk7)/c;
 
 function res=InverseFourier(Fw,w,t)
-    ft=zeros(size(w,1));
+    ft=zeros(size(w,1),1);
     for j=1:length(t)
         for i=1:length(w)
             ft(j)=ft(j)+Fw(i)*exp(1j*w(i)*t(j))+conj(Fw(i))*exp(-1j*w(i)*t(j));
@@ -92,11 +92,11 @@ lam=zeros(n,1);
 Il=zeros(n,1);
 
 for j=1:size(S,2)
-    for i=1:size(S,0)
+    for i=1:size(S,1)
         %S(i,j)
-        if j==0
+        if j==1
             lam(i)=(S(i,j))*1e-9;
-        elseif j==1
+        elseif j==2
             Il(i)=S(i,j);
         end
     end
@@ -104,18 +104,18 @@ end
 
 Il=(Il-min(Il))/max(Il); % Initial measured spectrum
 
-f=zeros(n);
-spectrumf=zeros(n);
+f=zeros(n,1);
+spectrumf=zeros(n,1);
 
 for i=1:n
-    f(n-i-1)=c/(lam(i));
-    spectrumf(n-i-1)=(lam(i)^2)*Il(i)/c;
+    f(n-i+1)=c/(lam(i));
+    spectrumf(n-i+1)=(lam(i)^2)*Il(i)/c;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Increasing time resolution (by increasing frequency range)
 
 Ef0=sqrt(2*spectrumf/(c*eps0));
-t0=linspace(0,50e-15,len(f));
+t0=linspace(0,50e-15,length(f));
 Et0=InverseFourier(Ef0,2*pi*f,t0);
 
 %%%%%%%%%%%% Trimming spectrum low and high frequencies and interpolating it to get equally spaced frequencies
