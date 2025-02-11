@@ -129,12 +129,12 @@ for i=1:NN
     spectrumf_trim(i)=spectrumf(i+266); % New angular frequency spectrum (trimmed)
 end
 
-spectrumf_interp_function=csapi(f_trim,spectrumf_trim);
+%spectrumf_interp_function=csapi(f_trim,spectrumf_trim);
 
 N=3000;
-f_interp=linspace(min(f_trim),max(f_trim),N);
+f_interp=linspace(min(f_trim),max(f_trim),N)';
 spectrumf_interp=zeros(N,1);
-df=f_interp(1)-f_interp(0);
+df=f_interp(2)-f_interp(1);
 
 w=2*pi*f_interp;
 
@@ -144,7 +144,7 @@ for i=1:N
     elseif i==N
         spectrumf_interp(i)=spectrumf_trim(NN);
     else
-        spectrumf_interp(i)=spectrumf_interp_function(f_interp(i));
+        spectrumf_interp(i)=csapi(f_trim,spectrumf_trim,f_interp(i));%spectrumf_interp_function(f_interp(i));
         if spectrumf_interp(i)<0
             spectrumf_interp(i)=0;
         end
@@ -163,7 +163,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-t0_interp=linspace(0,50e-15,len(f_interp));
+t0_interp=linspace(0,max(t0),length(f_interp));%linspace(0,50e-15,length(f_interp));
 Et0_interp=InverseFourier(Ef0_interp,2*pi*f_interp,t0_interp);
 
 % fig,(ax1,ax2)=plt.subplots(2,1,tight_layout=True)
