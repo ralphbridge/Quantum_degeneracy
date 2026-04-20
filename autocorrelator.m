@@ -13,44 +13,21 @@ TOD_laser = 0;
 GDD_fsac = 230e-30;
 TOD_fsac = 345e-45;
 
-n_bounces = 8;
+n_bounces = 16;
 
-zd = 2.06 + 0.05*(n_bounces-1); % Distance from laser pinhole to FSAC pinhole
-zw = 0e-3; % Measure this again
+zd = 2.06 + 0.05*(n_bounces-1); % Distance from laser pinhole to FSAC pinhole in meters
+zw = 0e-3; % Window thickness in meters (measure this again)
 
-%% Symbolic refractive index derivatives (follow Python sympy use)
+%% Symbolic refractive index for air and BK7 (x represents angular frequency)
 syms x real
 
-n_air = 1 + 0.05792105./(238.0185 - (1e-12)*(x/(2*pi*c)).^2) + 0.00167917./(57.362 - (1e-12)*(x/(2*pi*c)).^2);
-n_bk7 = sqrt( 1 ...
+n_air_f = 1 + 0.05792105./(238.0185 - (1e-12)*(x/(2*pi*c)).^2) + 0.00167917./(57.362 - (1e-12)*(x/(2*pi*c)).^2);
+n_bk7_f = sqrt( 1 ...
     + 1.03961212*(1e12)*(2*pi*c/x).^2 ./((1e12)*(2*pi*c/x).^2 - 0.00600069867) ...
     + 0.231792344*(1e12)*(2*pi*c/x).^2 ./((1e12)*(2*pi*c/x).^2 - 0.0200179144) ...
     + 1.01046945*(1e12)*(2*pi*c/x).^2 ./((1e12)*(2*pi*c/x).^2 - 103.560653) );
 
-% evaluate function and derivatives at w0
-n0_air = double(subs(n_air, x, w0));
-np0_air = double(subs(diff(n_air, x), x, w0));
-npp0_air = double(subs(diff(n_air, x, 2), x, w0));
-nppp0_air = double(subs(diff(n_air, x, 3), x, w0));
-
-k0_air = double(n0_air * w0 / c);
-kp0_air = double((n0_air + w0*np0_air)/c);
-kpp0_air = double((2*np0_air + w0*npp0_air)/c);
-kppp0_air = double((3*nppp0_air + w0*nppp0_air)/c); % matches Python structure though last term has duplication
-
-n0_bk7 = double(subs(n_bk7, x, w0));
-np0_bk7 = double(subs(diff(n_bk7, x), x, w0));
-npp0_bk7 = double(subs(diff(n_bk7, x, 2), x, w0));
-nppp0_bk7 = double(subs(diff(n_bk7, x, 3), x, w0));
-
-k0_bk7 = double(n0_bk7 * w0 / c);
-kp0_bk7 = double((n0_bk7 + w0*np0_bk7)/c);
-kpp0_bk7 = double((2*np0_bk7 + w0*npp0_bk7)/c);
-kppp0_bk7 = double((3*nppp0_bk7 + w0*nppp0_bk7)/c);
-
-%% -- Helper functions (as nested functions) --
-% Note: MATLAB nested functions capture workspace variables. If you prefer,
-% move them to separate local functions in the same file.
+%% -- Helper functions (as nested functions)
 
     function ft = InverseFourier(Fw, w, t)
         % Implements: ft[j] = sum_i Fw[i]*exp(1j*w[i]*t[j]) + conj(Fw[i])*exp(-1j*w[i]*t[j])
@@ -98,9 +75,8 @@ kppp0_bk7 = double((3*nppp0_bk7 + w0*nppp0_bk7)/c);
         out = ceil(x/100) * 100;
     end
 
-%% #################### Getting measured spectra
+%% Getting measured spectra
 Smat = readmatrix('spectrum.xlsx'); % assumes two columns: wavelength (nm), intensity
-% If header exists, readmatrix should skip automatically; adjust if needed.
 
 % ensure numeric
 Smat = double(Smat);
@@ -129,10 +105,10 @@ for i = 1:n
     spectrumf(n - i + 1) = (lam(i)^2) * Il(i) / c;
 end
 
-%% Increasing time resolution (by increasing frequency range)
-Ef0 = sqrt(2 * spectrumf ./ (c * eps0));
-t0 = linspace(0,50e-15,numel(f));
-Et0 = InverseFourier(Ef0, 2*pi*f, t0);
+%% Increasing time resolution (by increasing frequency range) % <---- Not being used right now
+% Ef0 = sqrt(2 * spectrumf ./ (c * eps0));
+% t0 = linspace(0,50e-15,numel(f));
+% Et0 = InverseFourier(Ef0, 2*pi*f, t0);
 
 %% Trimming spectrum low and high frequencies and interpolating it to get equally spaced frequencies
 NN = 799; % Length of actual spectrum (obtained from matlab)
@@ -176,8 +152,58 @@ for i = 1:N
     Ef0_interp(i) = Ef0_interp(i) * exp(1i * TOD_laser * (w(i)-w0)^3 / factorial(3));
 end
 
-t0_interp = linspace(0,50e-15,numel(f_interp));
+t0_interp = linspace(-100e-15,100e-15,numel(f_interp)/5);
 Et0_interp = InverseFourier(Ef0_interp, 2*pi*f_interp, t0_interp);
+
+figure
+plot(t0_interp*1e15,Et0_interp,'linewidth',2)
+grid on
+xlabel('Time t s','fontsize',20)
+ylabel('Electric field V/m','fontsize',20)
+title('Initial pulse (right after laser pinhole)','fontsize',20)
+
+%% Getting GVD for air as a function of angular frequency w
+n_air=zeros(N,1);
+np_air=zeros(N,1);
+npp_air=zeros(N,1);
+nppp_air=zeros(N,1);
+
+k_air=zeros(N,1);
+kp_air=zeros(N,1);
+kpp_air=zeros(N,1);
+kppp_air=zeros(N,1);
+
+n_bk7=zeros(N,1);
+np_bk7=zeros(N,1);
+npp_bk7=zeros(N,1);
+nppp_bk7=zeros(N,1);
+
+k_bk7=zeros(N,1);
+kp_bk7=zeros(N,1);
+kpp_bk7=zeros(N,1);
+kppp_bk7=zeros(N,1);
+
+for i=1:N
+    n_air(i) = double(subs(n_air_f, x, w(i)));
+    np_air(i) = double(subs(diff(n_air_f, x), x, w(i)));
+    npp_air(i) = double(subs(diff(n_air_f, x, 2), x, w(i)));
+    nppp_air(i) = double(subs(diff(n_air_f, x, 3), x, w(i)));
+
+    k_air(i) = double(n_air(i) * w(i) / c);
+    kp_air(i) = double((n_air(i) + w(i)*np_air(i))/c);
+    kpp_air(i) = double((2*np_air(i) + w(i)*npp_air(i))/c);
+    kppp_air(i) = double((3*nppp_air(i) + w(i)*nppp_air(i))/c); % matches Python structure though last term has duplication
+
+    n_bk7(i) = double(subs(n_bk7_f, x, w(i)));
+    np_bk7(i) = double(subs(diff(n_bk7_f, x), x, w(i)));
+    npp_bk7(i) = double(subs(diff(n_bk7_f, x, 2), x, w(i)));
+    nppp_bk7(i) = double(subs(diff(n_bk7_f, x, 3), x, w(i)));
+
+    k_bk7(i) = double(n_bk7(i) * w(i) / c);
+    kp_bk7(i) = double((n_bk7(i) + w(i)*np_bk7(i))/c);
+    kpp_bk7(i) = double((2*np_bk7(i) + w(i)*npp_bk7(i))/c);
+    kppp_bk7(i) = double((3*nppp_bk7(i) + w(i)*nppp_bk7(i))/c);
+end
 
 %% Getting GDD data from Thorlabs chirped mirrors data
 CM = readmatrix('UMxx-15FS_data.xlsx');
@@ -226,6 +252,49 @@ for i = 1:N
     end
 end
 
+%% Getting GDD data from Thorabs CM mirrors data 2.0 (Feb 19th 2026)
+CM_2 = readmatrix('UMxx-15FS_data_2.xlsx');
+CM_2 = double(CM_2);
+[n_cm_2, m_cm_2] = size(CM_2);
+lam_cm_2 = zeros(n_cm_2,1);
+GDD_cm_lam_2 = zeros(n_cm_2,1);
+
+for j = 1:m_cm_2
+    for i = 1:n_cm_2
+        if j == 1
+            lam_cm_2(i) = CM_2(i,j) * 1e-9;
+        else
+            GDD_cm_lam_2(i) = CM_2(i,j) * 1e-30;
+        end
+    end
+end
+
+w_cm_2 = zeros(n_cm_2,1);
+GDD_cm_2 = zeros(n_cm_2,1);
+for i = 1:n_cm_2
+    w_cm_2(n_cm_2 - i + 1) = 2*pi*c / lam_cm_2(i);
+    GDD_cm_2(n_cm_2 - i + 1) = GDD_cm_lam_2(i);
+end
+
+% cubic spline interpolation over angular frequency
+GDD_cm_interp_2 = ppval(spline(w_cm_2, GDD_cm_2), w);
+
+% approximate TOD_p01_data (slope averaging)
+TOD_cm_2 = zeros(N,1);
+for i = 1:n_cm_2
+    if i == 1
+        m2 = (GDD_cm_2(i+1) - GDD_cm_2(i)) / (w_cm_2(i+1) - w_cm_2(i));
+        TOD_cm_2(i) = m2;
+    elseif i == n_cm_2
+        m1 = (GDD_cm_2(i) - GDD_cm_2(i-1)) / (w_cm_2(i) - w_cm_2(i-1));
+        TOD_cm_2(i) = m1;
+    else
+        m1 = (GDD_cm_2(i) - GDD_cm_2(i-1)) / (w_cm_2(i) - w_cm_2(i-1));
+        m2 = (GDD_cm_2(i+1) - GDD_cm_2(i)) / (w_cm_2(i+1) - w_cm_2(i));
+        TOD_cm_2(i) = (m1 + m2) / 2;
+    end
+end
+
 %% Getting GDD data from Thorlabs P01 mirrors data
 P01 = readmatrix('P01_data.xlsx');
 P01 = double(P01);
@@ -270,6 +339,35 @@ end
 
 TOD_p01_interp = ppval(spline(w_p01, GDD_p01_data), w); % as in Python (note: this uses same GDD data)
 
+%% Adding the phases to get total GDD
+
+GDD_tot=zeros(N,1);
+for i=1:N
+    GDD_tot(i)=GDD_tot(i)+(kpp_air(i)*zd+n_bounces*GDD_cm_interp_2(i)+4*GDD_p01_interp(i)+GDD_fsac);%*(w(i)-w0)^2/factorial(2);
+end
+
+figure
+subplot(2,1,1)
+plot(w,kpp_air*zd/(1e-15)^2,'linewidth',2) % GDD of air after a length of zd in fs^2
+hold on
+grid on
+plot(w,n_bounces*GDD_cm/(1e-15)^2,'linewidth',2)
+plot(w,n_bounces*GDD_cm_interp_2/(1e-15)^2,'linewidth',2)
+plot(w,4*GDD_p01_interp,'linewidth',2)
+plot(w,0*w+GDD_fsac/(1e-15)^2,'linewidth',2)
+plot(w,kpp_bk7*zw/(1e-15)^2,'linewidth',2)
+xline(2*pi*c/754e-9,'linewidth',2) % Central wavelength of the measured spectrum (754 nm)
+legend('zd of air','Chirped mirrors (differentiated GDD)','Chirped mirrors (measured)','4 P01 mirrors','FSAC (constant)','BK7 glass')
+xlabel('Angular frequency $\omega$','interpreter','latex','fontsize',20)
+ylabel('GDD $fs^2$','interpreter','latex','fontsize',20)
+title(['n_{bounces}=',num2str(n_bounces)],'fontsize',20)
+subplot(2,1,2)
+plot(w,GDD_tot/(1e-15)^2,'linewidth',2)
+grid on
+xline(2*pi*c/754e-9,'linewidth',2) % Central wavelength of the measured spectrum (754 nm)
+xlabel('Angular frequency $\omega$','interpreter','latex','fontsize',20)
+ylabel('Total GDD $fs^2$','interpreter','latex','fontsize',20)
+
 %% Computing the phases due to each element in the layout
 Ef = zeros(numel(Ef0_interp),1,'like',1+1i);
 
@@ -277,16 +375,20 @@ for i = 1:N
     % Start with initial interpolated spectrum
     Ef(i) = Ef0_interp(i);
     % Dispersion phases introduced by air up to the second order (as in your uncommented code)
-    Ef(i) = Ef(i) * exp(1i * kpp0_air * (w(i)-w0)^2 * zd / factorial(2));
+    % Ef(i) = Ef(i) * exp(1i * kpp0_air * (w(i)-w0)^2 * zd / factorial(2));
+    Ef(i) = Ef(i) * exp(1i * kpp_air(i) * (w(i)-w0)^2 * zd / factorial(2));
     
     % Dispersion phases introduced by BK7 Fused Silica window (commented out in Python)
-    % Ef(i) = Ef(i) * exp(1i * kpp0_bk7 * (w(i)-w0)^2 * zw / factorial(2));
+    % Ef(i) = Ef(i) * exp(1i * kpp_bk7 * (w(i)-w0)^2 * zw / factorial(2));
     
     % Dispersion phases introduced by n_bounces bounces off Chirped mirrors: applied as n_bounces*GD_cm_interp*(w-w0)
-    Ef(i) = Ef(i) * exp(1i * n_bounces * GD_cm_interp(i) * (w(i)-w0));
+    % Ef(i) = Ef(i) * exp(1i * n_bounces * GD_cm_interp(i) * (w(i)-w0));
+    Ef(i) = Ef(i) * exp(1i * n_bounces * GDD_cm_interp_2(i) * (w(i)-w0)^2 / factorial(2));
+    Ef(i) = Ef(i) * exp(1i * n_bounces * TOD_cm_2(i) * (w(i)-w0)^3 / factorial(3));
     
     % Dispersion from P01
-    Ef(i) = Ef(i) * exp(1i * GDD_p01_interp(i) * (w(i)-w0)^2 / factorial(2));
+    Ef(i) = Ef(i) * exp(1i * 4 * GDD_p01_interp(i) * (w(i)-w0)^2 / factorial(2)); % Four P01 mirrors in total
+    Ef(i) = Ef(i) * exp(1i * 4 * TOD_p01_interp(i) * (w(i)-w0)^3 / factorial(3));
     
     % FSAC terms
     Ef(i) = Ef(i) * exp(1i * GDD_fsac * (w(i)-w0)^2 / factorial(2));
@@ -325,7 +427,8 @@ hold on;
 plot(t_dense*1e15, Squad_dense, '-', 'LineWidth', 1.5, 'DisplayName', 'Smoothed interpolation');
 xlabel('Time delay \tau (fs)', 'FontSize', 12);
 ylabel('S_{quadratic} (W/m^2)', 'FontSize', 12);
+title(['Number of bounces n=',num2str(n_bounces)])
 xlim([-250 250]);
 grid on;
 % Save figure
-print(sprintf('FieldTrace_%db_far.pdf', n_bounces), '-dpdf','-bestfit');
+% print(sprintf('FieldTrace_%db_far.pdf', n_bounces), '-dpdf','-bestfit');
