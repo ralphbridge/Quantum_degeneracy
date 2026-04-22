@@ -105,6 +105,13 @@ for i = 1:n
     spectrumf(n - i + 1) = (lam(i)^2) * Il(i) / c;
 end
 
+figure
+plot(lam*1e9,Il,'linewidth',2)
+grid on
+axis([600 1000 min(Il) max(Il)])
+xlabel('Wavelength $\lambda$ nm','interpreter','latex','fontsize',20)
+ylabel('Intensity (arb. units)','interpreter','latex','fontsize',20)
+
 %% Increasing time resolution (by increasing frequency range) % <---- Not being used right now
 % Ef0 = sqrt(2 * spectrumf ./ (c * eps0));
 % t0 = linspace(0,50e-15,numel(f));
@@ -158,11 +165,11 @@ Et0_interp = InverseFourier(Ef0_interp, 2*pi*f_interp, t0_interp);
 figure
 plot(t0_interp*1e15,Et0_interp,'linewidth',2)
 grid on
-xlabel('Time t s','fontsize',20)
+xlabel('Time t fs','fontsize',20)
 ylabel('Electric field V/m','fontsize',20)
 title('Initial pulse (right after laser pinhole)','fontsize',20)
 
-%% Getting GVD for air as a function of angular frequency w
+%% Getting GVD for air and bk7 glass as a function of angular frequency w
 n_air=zeros(N,1);
 np_air=zeros(N,1);
 npp_air=zeros(N,1);
@@ -295,6 +302,15 @@ for i = 1:n_cm_2
     end
 end
 
+figure
+plot(w,GDD_cm*1e30,'linewidth',2)
+hold on
+plot(w_cm_2,GDD_cm_2*1e30,'linewidth',2)
+grid on
+legend('Numerically differentiated data','Measured data','fontsize',20)
+xlabel('$\omega$ rad/s','interpreter','latex','fontsize',20)
+ylabel('GDD $fs^2$','interpreter','latex','fontsize',20)
+xline(2*pi*c/800e-9,'-r','linewidth',2)
 %% Getting GDD data from Thorlabs P01 mirrors data
 P01 = readmatrix('P01_data.xlsx');
 P01 = double(P01);
