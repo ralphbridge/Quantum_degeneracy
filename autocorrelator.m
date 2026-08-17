@@ -13,7 +13,7 @@ TOD_laser = 0;
 GDD_fsac = 230e-30;
 TOD_fsac = 345e-45;
 
-n_bounces = 16;
+n_bounces = 10;
 
 zd = 2.06 + 0.05*(n_bounces-1); % Distance from laser pinhole to FSAC pinhole in meters
 zw = 0e-3; % Window thickness in meters (measure this again)
@@ -76,7 +76,7 @@ n_bk7_f = sqrt( 1 ...
     end
 
 %% Getting measured spectra
-Smat = readmatrix('spectrum.xlsx'); % assumes two columns: wavelength (nm), intensity
+Smat = readmatrix('spectrum_asad.xlsx'); % assumes two columns: wavelength (nm), intensity
 
 % ensure numeric
 Smat = double(Smat);
@@ -105,12 +105,12 @@ for i = 1:n
     spectrumf(n - i + 1) = (lam(i)^2) * Il(i) / c;
 end
 
-figure
-plot(lam*1e9,Il,'linewidth',2)
-grid on
-axis([600 1000 min(Il) max(Il)])
-xlabel('Wavelength $\lambda$ nm','interpreter','latex','fontsize',20)
-ylabel('Intensity (arb. units)','interpreter','latex','fontsize',20)
+% figure
+% plot(lam*1e9,Il,'linewidth',2)
+% grid on
+% axis([600 1000 min(Il) max(Il)])
+% xlabel('Wavelength $\lambda$ nm','interpreter','latex','fontsize',20)
+% ylabel('Intensity (arb. units)','interpreter','latex','fontsize',20)
 
 %% Increasing time resolution (by increasing frequency range) % <---- Not being used right now
 % Ef0 = sqrt(2 * spectrumf ./ (c * eps0));
@@ -162,55 +162,76 @@ end
 t0_interp = linspace(-100e-15,100e-15,numel(f_interp)/5);
 Et0_interp = InverseFourier(Ef0_interp, 2*pi*f_interp, t0_interp);
 
-figure
-plot(t0_interp*1e15,Et0_interp,'linewidth',2)
-grid on
-xlabel('Time t fs','fontsize',20)
-ylabel('Electric field V/m','fontsize',20)
-title('Initial pulse (right after laser pinhole)','fontsize',20)
+% figure
+% plot(t0_interp*1e15,Et0_interp,'linewidth',2)
+% grid on
+% xlabel('Time t fs','fontsize',20)
+% ylabel('Electric field V/m','fontsize',20)
+% title('Initial pulse (right after laser pinhole)','fontsize',20)
+
+%% Getting GVD for air and bk7 glass as a function of angular frequency w0
+n_air0 = double(subs(n_air_f, x, w0));
+np_air0 = double(subs(diff(n_air_f, x), x, w0));
+npp_air0 = double(subs(diff(n_air_f, x, 2), x, w0));
+nppp_air0 = double(subs(diff(n_air_f, x, 3), x, w0));
+
+k_air0 = double(n_air0 * w0 / c);
+kp_air0 = double((n_air0 + w0*np_air0)/c);
+kpp_air0 = double((2*np_air0 + w0*npp_air0)/c);
+kppp_air0 = double((3*nppp_air0 + w0*nppp_air0)/c); % matches Python structure though last term has duplication
+
+n_bk70 = double(subs(n_bk7_f, x, w0));
+np_bk70 = double(subs(diff(n_bk7_f, x), x, w0));
+npp_bk70 = double(subs(diff(n_bk7_f, x, 2), x, w0));
+nppp_bk70 = double(subs(diff(n_bk7_f, x, 3), x, w0));
+
+k_bk70 = double(n_bk70 * w0 / c);
+kp_bk70 = double((n_bk70 + w0*np_bk70)/c);
+kpp_bk70 = double((2*np_bk70 + w0*npp_bk70)/c);
+kppp_bk70 = double((3*nppp_bk70 + w0*nppp_bk70)/c);
 
 %% Getting GVD for air and bk7 glass as a function of angular frequency w
-n_air=zeros(N,1);
-np_air=zeros(N,1);
-npp_air=zeros(N,1);
-nppp_air=zeros(N,1);
-
-k_air=zeros(N,1);
-kp_air=zeros(N,1);
-kpp_air=zeros(N,1);
-kppp_air=zeros(N,1);
-
-n_bk7=zeros(N,1);
-np_bk7=zeros(N,1);
-npp_bk7=zeros(N,1);
-nppp_bk7=zeros(N,1);
-
-k_bk7=zeros(N,1);
-kp_bk7=zeros(N,1);
-kpp_bk7=zeros(N,1);
-kppp_bk7=zeros(N,1);
-
-for i=1:N
-    n_air(i) = double(subs(n_air_f, x, w(i)));
-    np_air(i) = double(subs(diff(n_air_f, x), x, w(i)));
-    npp_air(i) = double(subs(diff(n_air_f, x, 2), x, w(i)));
-    nppp_air(i) = double(subs(diff(n_air_f, x, 3), x, w(i)));
-
-    k_air(i) = double(n_air(i) * w(i) / c);
-    kp_air(i) = double((n_air(i) + w(i)*np_air(i))/c);
-    kpp_air(i) = double((2*np_air(i) + w(i)*npp_air(i))/c);
-    kppp_air(i) = double((3*nppp_air(i) + w(i)*nppp_air(i))/c); % matches Python structure though last term has duplication
-
-    n_bk7(i) = double(subs(n_bk7_f, x, w(i)));
-    np_bk7(i) = double(subs(diff(n_bk7_f, x), x, w(i)));
-    npp_bk7(i) = double(subs(diff(n_bk7_f, x, 2), x, w(i)));
-    nppp_bk7(i) = double(subs(diff(n_bk7_f, x, 3), x, w(i)));
-
-    k_bk7(i) = double(n_bk7(i) * w(i) / c);
-    kp_bk7(i) = double((n_bk7(i) + w(i)*np_bk7(i))/c);
-    kpp_bk7(i) = double((2*np_bk7(i) + w(i)*npp_bk7(i))/c);
-    kppp_bk7(i) = double((3*nppp_bk7(i) + w(i)*nppp_bk7(i))/c);
-end
+% n_air=zeros(N,1);
+% np_air=zeros(N,1);
+% npp_air=zeros(N,1);
+% nppp_air=zeros(N,1);
+% 
+% k_air=zeros(N,1);
+% kp_air=zeros(N,1);
+% kpp_air=zeros(N,1);
+% kppp_air=zeros(N,1);
+% 
+% n_bk7=zeros(N,1);
+% np_bk7=zeros(N,1);
+% npp_bk7=zeros(N,1);
+% nppp_bk7=zeros(N,1);
+% 
+% k_bk7=zeros(N,1);
+% kp_bk7=zeros(N,1);
+% kpp_bk7=zeros(N,1);
+% kppp_bk7=zeros(N,1);
+% 
+% for i=1:N
+%     n_air(i) = double(subs(n_air_f, x, w(i)));
+%     np_air(i) = double(subs(diff(n_air_f, x), x, w(i)));
+%     npp_air(i) = double(subs(diff(n_air_f, x, 2), x, w(i)));
+%     nppp_air(i) = double(subs(diff(n_air_f, x, 3), x, w(i)));
+% 
+%     k_air(i) = double(n_air(i) * w(i) / c);
+%     kp_air(i) = double((n_air(i) + w(i)*np_air(i))/c);
+%     kpp_air(i) = double((2*np_air(i) + w(i)*npp_air(i))/c);
+%     kppp_air(i) = double((3*nppp_air(i) + w(i)*nppp_air(i))/c); % matches Python structure though last term has duplication
+% 
+%     n_bk7(i) = double(subs(n_bk7_f, x, w(i)));
+%     np_bk7(i) = double(subs(diff(n_bk7_f, x), x, w(i)));
+%     npp_bk7(i) = double(subs(diff(n_bk7_f, x, 2), x, w(i)));
+%     nppp_bk7(i) = double(subs(diff(n_bk7_f, x, 3), x, w(i)));
+% 
+%     k_bk7(i) = double(n_bk7(i) * w(i) / c);
+%     kp_bk7(i) = double((n_bk7(i) + w(i)*np_bk7(i))/c);
+%     kpp_bk7(i) = double((2*np_bk7(i) + w(i)*npp_bk7(i))/c);
+%     kppp_bk7(i) = double((3*nppp_bk7(i) + w(i)*nppp_bk7(i))/c);
+% end
 
 %% Getting GDD data from Thorlabs chirped mirrors data
 CM = readmatrix('UMxx-15FS_data.xlsx');
@@ -260,57 +281,78 @@ for i = 1:N
 end
 
 %% Getting GDD data from Thorabs CM mirrors data 2.0 (Feb 19th 2026)
-CM_2 = readmatrix('UMxx-15FS_data_2.xlsx');
-CM_2 = double(CM_2);
-[n_cm_2, m_cm_2] = size(CM_2);
-lam_cm_2 = zeros(n_cm_2,1);
-GDD_cm_lam_2 = zeros(n_cm_2,1);
+% CM_2 = readmatrix('UMxx-15FS_data_2.xlsx');
+% CM_2 = double(CM_2);
+% [n_cm_2, m_cm_2] = size(CM_2);
+% lam_cm_2 = zeros(n_cm_2,1);
+% GDD_cm_lam_2 = zeros(n_cm_2,1);
+% 
+% for j = 1:m_cm_2
+%     for i = 1:n_cm_2
+%         if j == 1
+%             lam_cm_2(i) = CM_2(i,j) * 1e-9;
+%         else
+%             GDD_cm_lam_2(i) = CM_2(i,j) * 1e-30;
+%         end
+%     end
+% end
+% 
+% w_cm_2 = zeros(n_cm_2,1);
+% GDD_cm_2 = zeros(n_cm_2,1);
+% for i = 1:n_cm_2
+%     w_cm_2(n_cm_2 - i + 1) = 2*pi*c / lam_cm_2(i);
+%     GDD_cm_2(n_cm_2 - i + 1) = GDD_cm_lam_2(i);
+% end
+% 
+% % cubic spline interpolation over angular frequency
+% GDD_cm_interp_2 = ppval(spline(w_cm_2, GDD_cm_2), w);
+% 
+% % approximate TOD_p01_data (slope averaging)
+% TOD_cm_2 = zeros(N,1);
+% for i = 1:n_cm_2
+%     if i == 1
+%         m2 = (GDD_cm_2(i+1) - GDD_cm_2(i)) / (w_cm_2(i+1) - w_cm_2(i));
+%         TOD_cm_2(i) = m2;
+%     elseif i == n_cm_2
+%         m1 = (GDD_cm_2(i) - GDD_cm_2(i-1)) / (w_cm_2(i) - w_cm_2(i-1));
+%         TOD_cm_2(i) = m1;
+%     else
+%         m1 = (GDD_cm_2(i) - GDD_cm_2(i-1)) / (w_cm_2(i) - w_cm_2(i-1));
+%         m2 = (GDD_cm_2(i+1) - GDD_cm_2(i)) / (w_cm_2(i+1) - w_cm_2(i));
+%         TOD_cm_2(i) = (m1 + m2) / 2;
+%     end
+% end
+% 
+% figure
+% plot(w,GDD_cm*1e30,'linewidth',2)
+% hold on
+% plot(w_cm_2,GDD_cm_2*1e30,'linewidth',2)
+% grid on
+% legend('Numerically differentiated data','Measured data','fontsize',20)
+% xlabel('$\omega$ rad/s','interpreter','latex','fontsize',20)
+% ylabel('GDD $fs^2$','interpreter','latex','fontsize',20)
+% xline(2*pi*c/800e-9,'-r','linewidth',2)
 
-for j = 1:m_cm_2
-    for i = 1:n_cm_2
-        if j == 1
-            lam_cm_2(i) = CM_2(i,j) * 1e-9;
-        else
-            GDD_cm_lam_2(i) = CM_2(i,j) * 1e-30;
-        end
-    end
+%% Getting integral of GD as a function of frequency for the CM data
+intGDcm=zeros(size(w));
+wp=w(1);
+intGDcm(1)=0;
+for i=2:N
+    wp=vertcat(wp,w(i));
+    intGDcm(i)=trapz(wp,GD_cm_interp(1:i));
 end
 
-w_cm_2 = zeros(n_cm_2,1);
-GDD_cm_2 = zeros(n_cm_2,1);
-for i = 1:n_cm_2
-    w_cm_2(n_cm_2 - i + 1) = 2*pi*c / lam_cm_2(i);
-    GDD_cm_2(n_cm_2 - i + 1) = GDD_cm_lam_2(i);
-end
-
-% cubic spline interpolation over angular frequency
-GDD_cm_interp_2 = ppval(spline(w_cm_2, GDD_cm_2), w);
-
-% approximate TOD_p01_data (slope averaging)
-TOD_cm_2 = zeros(N,1);
-for i = 1:n_cm_2
-    if i == 1
-        m2 = (GDD_cm_2(i+1) - GDD_cm_2(i)) / (w_cm_2(i+1) - w_cm_2(i));
-        TOD_cm_2(i) = m2;
-    elseif i == n_cm_2
-        m1 = (GDD_cm_2(i) - GDD_cm_2(i-1)) / (w_cm_2(i) - w_cm_2(i-1));
-        TOD_cm_2(i) = m1;
-    else
-        m1 = (GDD_cm_2(i) - GDD_cm_2(i-1)) / (w_cm_2(i) - w_cm_2(i-1));
-        m2 = (GDD_cm_2(i+1) - GDD_cm_2(i)) / (w_cm_2(i+1) - w_cm_2(i));
-        TOD_cm_2(i) = (m1 + m2) / 2;
-    end
-end
-
-figure
-plot(w,GDD_cm*1e30,'linewidth',2)
-hold on
-plot(w_cm_2,GDD_cm_2*1e30,'linewidth',2)
-grid on
-legend('Numerically differentiated data','Measured data','fontsize',20)
-xlabel('$\omega$ rad/s','interpreter','latex','fontsize',20)
-ylabel('GDD $fs^2$','interpreter','latex','fontsize',20)
-xline(2*pi*c/800e-9,'-r','linewidth',2)
+% figure
+% subplot(2,1,1)
+% plot(w,GD_cm_interp)
+% grid on
+% xlabel('Angular frequency $\omega$ rad/s','interpreter','latex','fontsize',20)
+% ylabel('Group delay GD fs','fontsize',20)
+% subplot(2,1,2)
+% plot(w,intGDcm)
+% grid on
+% xlabel('Angular frequency $\omega$ rad/s','interpreter','latex','fontsize',20)
+% ylabel("\int_{\omega_1}^\omega GD(\omega')d\omega'",'fontsize',20)
 %% Getting GDD data from Thorlabs P01 mirrors data
 P01 = readmatrix('P01_data.xlsx');
 P01 = double(P01);
@@ -336,6 +378,7 @@ for i = 1:n_p01
 end
 
 GDD_p01_interp = ppval(spline(w_p01, GDD_p01_data), w);
+GDD_p01_interp0=ppval(spline(w_p01, GDD_p01_data), w0);
 
 % approximate TOD_p01_data (slope averaging)
 TOD_p01_data = zeros(n_p01,1);
@@ -357,32 +400,32 @@ TOD_p01_interp = ppval(spline(w_p01, GDD_p01_data), w); % as in Python (note: th
 
 %% Adding the phases to get total GDD
 
-GDD_tot=zeros(N,1);
-for i=1:N
-    GDD_tot(i)=GDD_tot(i)+(kpp_air(i)*zd+n_bounces*GDD_cm_interp_2(i)+4*GDD_p01_interp(i)+GDD_fsac);%*(w(i)-w0)^2/factorial(2);
-end
-
-figure
-subplot(2,1,1)
-plot(w,kpp_air*zd/(1e-15)^2,'linewidth',2) % GDD of air after a length of zd in fs^2
-hold on
-grid on
-plot(w,n_bounces*GDD_cm/(1e-15)^2,'linewidth',2)
-plot(w,n_bounces*GDD_cm_interp_2/(1e-15)^2,'linewidth',2)
-plot(w,4*GDD_p01_interp,'linewidth',2)
-plot(w,0*w+GDD_fsac/(1e-15)^2,'linewidth',2)
-plot(w,kpp_bk7*zw/(1e-15)^2,'linewidth',2)
-xline(2*pi*c/754e-9,'linewidth',2) % Central wavelength of the measured spectrum (754 nm)
-legend('zd of air','Chirped mirrors (differentiated GDD)','Chirped mirrors (measured)','4 P01 mirrors','FSAC (constant)','BK7 glass')
-xlabel('Angular frequency $\omega$','interpreter','latex','fontsize',20)
-ylabel('GDD $fs^2$','interpreter','latex','fontsize',20)
-title(['n_{bounces}=',num2str(n_bounces)],'fontsize',20)
-subplot(2,1,2)
-plot(w,GDD_tot/(1e-15)^2,'linewidth',2)
-grid on
-xline(2*pi*c/754e-9,'linewidth',2) % Central wavelength of the measured spectrum (754 nm)
-xlabel('Angular frequency $\omega$','interpreter','latex','fontsize',20)
-ylabel('Total GDD $fs^2$','interpreter','latex','fontsize',20)
+% GDD_tot=zeros(N,1);
+% for i=1:N
+%     GDD_tot(i)=GDD_tot(i)+(kpp_air(i)*zd+n_bounces*GDD_cm_interp_2(i)+4*GDD_p01_interp(i)+GDD_fsac);%*(w(i)-w0)^2/factorial(2);
+% end
+% 
+% figure
+% subplot(2,1,1)
+% plot(w,kpp_air*zd/(1e-15)^2,'linewidth',2) % GDD of air after a length of zd in fs^2
+% hold on
+% grid on
+% plot(w,n_bounces*GDD_cm/(1e-15)^2,'linewidth',2)
+% plot(w,n_bounces*GDD_cm_interp_2/(1e-15)^2,'linewidth',2)
+% plot(w,4*GDD_p01_interp,'linewidth',2)
+% plot(w,0*w+GDD_fsac/(1e-15)^2,'linewidth',2)
+% plot(w,kpp_bk7*zw/(1e-15)^2,'linewidth',2)
+% xline(2*pi*c/754e-9,'linewidth',2) % Central wavelength of the measured spectrum (754 nm)
+% legend('zd of air','Chirped mirrors (differentiated GDD)','Chirped mirrors (measured)','4 P01 mirrors','FSAC (constant)','BK7 glass')
+% xlabel('Angular frequency $\omega$','interpreter','latex','fontsize',20)
+% ylabel('GDD $fs^2$','interpreter','latex','fontsize',20)
+% title(['n_{bounces}=',num2str(n_bounces)],'fontsize',20)
+% subplot(2,1,2)
+% plot(w,GDD_tot/(1e-15)^2,'linewidth',2)
+% grid on
+% xline(2*pi*c/754e-9,'linewidth',2) % Central wavelength of the measured spectrum (754 nm)
+% xlabel('Angular frequency $\omega$','interpreter','latex','fontsize',20)
+% ylabel('Total GDD $fs^2$','interpreter','latex','fontsize',20)
 
 %% Computing the phases due to each element in the layout
 Ef = zeros(numel(Ef0_interp),1,'like',1+1i);
@@ -392,19 +435,21 @@ for i = 1:N
     Ef(i) = Ef0_interp(i);
     % Dispersion phases introduced by air up to the second order (as in your uncommented code)
     % Ef(i) = Ef(i) * exp(1i * kpp0_air * (w(i)-w0)^2 * zd / factorial(2));
-    Ef(i) = Ef(i) * exp(1i * kpp_air(i) * (w(i)-w0)^2 * zd / factorial(2));
+    % Ef(i) = Ef(i) * exp(1i * kpp_air0 * (w(i)-w0)^2 * zd / factorial(2));
     
     % Dispersion phases introduced by BK7 Fused Silica window (commented out in Python)
     % Ef(i) = Ef(i) * exp(1i * kpp_bk7 * (w(i)-w0)^2 * zw / factorial(2));
     
     % Dispersion phases introduced by n_bounces bounces off Chirped mirrors: applied as n_bounces*GD_cm_interp*(w-w0)
+    Ef(i) = Ef(i) * exp(1i * n_bounces * intGDcm(i));
     % Ef(i) = Ef(i) * exp(1i * n_bounces * GD_cm_interp(i) * (w(i)-w0));
-    Ef(i) = Ef(i) * exp(1i * n_bounces * GDD_cm_interp_2(i) * (w(i)-w0)^2 / factorial(2));
-    Ef(i) = Ef(i) * exp(1i * n_bounces * TOD_cm_2(i) * (w(i)-w0)^3 / factorial(3));
+    % Ef(i) = Ef(i) * exp(1i * n_bounces * GDD_cm_interp_2(i) * (w(i)-w0)^2 / factorial(2));
+    % Ef(i) = Ef(i) * exp(1i * n_bounces * TOD_cm_2(i) * (w(i)-w0)^3 / factorial(3));
     
     % Dispersion from P01
-    Ef(i) = Ef(i) * exp(1i * 4 * GDD_p01_interp(i) * (w(i)-w0)^2 / factorial(2)); % Four P01 mirrors in total
-    Ef(i) = Ef(i) * exp(1i * 4 * TOD_p01_interp(i) * (w(i)-w0)^3 / factorial(3));
+    Ef(i) = Ef(i) * exp(1i * 4 * GDD_p01_interp0 * (w(i)-w0)^2 / factorial(2)); % Four P01 mirrors in total
+    % Ef(i) = Ef(i) * exp(1i * 4 * GDD_p01_interp(i) * (w(i)-w0)^2 / factorial(2)); % Four P01 mirrors in total
+    % Ef(i) = Ef(i) * exp(1i * 4 * TOD_p01_interp(i) * (w(i)-w0)^3 / factorial(3));
     
     % FSAC terms
     Ef(i) = Ef(i) * exp(1i * GDD_fsac * (w(i)-w0)^2 / factorial(2));
@@ -439,8 +484,8 @@ Squad_dense = interp1(t, Squad, t_dense, 'spline');
 %% Plotting
 figure('Name','Squadratic');
 plot(t * 1e15, Squad, 'LineWidth', 1);
-hold on;
-plot(t_dense*1e15, Squad_dense, '-', 'LineWidth', 1.5, 'DisplayName', 'Smoothed interpolation');
+% hold on;
+% plot(t_dense*1e15, Squad_dense, '-', 'LineWidth', 1.5, 'DisplayName', 'Smoothed interpolation');
 xlabel('Time delay \tau (fs)', 'FontSize', 12);
 ylabel('S_{quadratic} (W/m^2)', 'FontSize', 12);
 title(['Number of bounces n=',num2str(n_bounces)])
